@@ -1,5 +1,5 @@
 #define MyAppName "X Bootstrapper"
-#define MyAppVersion "1.0.2"
+#define MyAppVersion "1.0.3"
 #define MyAppPublisher "X Bootstrapper"
 #define MyAppExeName "X Bootstrapper.exe"
 #define MyAppURL "https://www.aisaka.me"

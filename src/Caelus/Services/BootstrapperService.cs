@@ -66,7 +66,7 @@ public sealed class BootstrapperService
             ProtocolService.Register(_settings);
 
         SetStatus("Starting Aisaka...");
-        var process = await LaunchAsync(install, payload, token);
+        var process = await LaunchAsync(install, token);
 
         _state.PlayerVersionGuid = install.VersionGuid;
         _state.PlayerExecutable = install.PlayerExecutable;
@@ -77,29 +77,24 @@ public sealed class BootstrapperService
         return process;
     }
 
-    private async Task<Process> LaunchAsync(ClientInstall install, ProtocolPayload? payload, CancellationToken token)
+    private async Task<Process> LaunchAsync(ClientInstall install, CancellationToken token)
     {
-        if (!string.IsNullOrWhiteSpace(_args.ProtocolUri) && ClientLocator.IsPlayerExe(install.PlayerExecutable))
+        // AisakaPlayer does not accept aisaka-player: / caelus-launcher: URIs. That is error 610.
+        // The official launcher turns the website Play link into a real join.
+        if (!string.IsNullOrWhiteSpace(_args.ProtocolUri))
         {
-            Logger.Write("Bootstrapper", "Starting AisakaPlayer with the join URI.");
-            return StartProcess(install.PlayerExecutable, start => start.ArgumentList.Add(_args.ProtocolUri!));
-        }
-
-        if (!string.IsNullOrWhiteSpace(_args.ProtocolUri) && File.Exists(install.LauncherExecutable))
-        {
-            Logger.Write("Bootstrapper", "Handing the join URI to AisakaLauncher.");
-            var launcher = StartProcess(install.LauncherExecutable!, start => start.ArgumentList.Add(_args.ProtocolUri!));
-            var player = await WaitForPlayerAsync(token);
-            return player ?? launcher;
-        }
-
-        if (payload is { CanStartPlayer: true } && ClientLocator.IsPlayerExe(install.PlayerExecutable))
-        {
-            return StartProcess(install.PlayerExecutable, start =>
+            if (!string.IsNullOrWhiteSpace(install.LauncherExecutable) && File.Exists(install.LauncherExecutable))
             {
-                start.ArgumentList.Add(_args.ProtocolUri!);
-                Logger.Write("Bootstrapper", $"Launch player with protocol ({payload.PlaceLauncherUrl})");
-            });
+                var join = _args.ToPlayerArgument();
+                Logger.Write("Bootstrapper", "Handing the join URI to AisakaLauncher.");
+                var launcher = StartProcess(install.LauncherExecutable, start => start.ArgumentList.Add(join));
+                var player = await WaitForPlayerAsync(token);
+                return player ?? launcher;
+            }
+
+            throw new InvalidOperationException(
+                "AisakaLauncher.exe is missing, so the website Play link cannot be turned into a join.\n\n" +
+                "Install the official Aisaka launcher once, then try Play again.");
         }
 
         var exe = _args.Mode == LaunchMode.Studio
