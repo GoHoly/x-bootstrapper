@@ -109,7 +109,14 @@ public sealed class BootstrapperService
         for (var i = 0; i < 300; i++)
         {
             token.ThrowIfCancellationRequested();
-            FastFlagService.ApplyAll(_settings, _state, ClientLocator.Find(_settings, _state), log: false);
+            try
+            {
+                FastFlagService.ApplyAll(_settings, _state, ClientLocator.Find(_settings, _state), log: false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Write("Bootstrapper", $"Could not apply FastFlags while waiting: {ex.Message}");
+            }
 
             var player = ClientLocator.FindRunningPlayer();
             if (player is not null)

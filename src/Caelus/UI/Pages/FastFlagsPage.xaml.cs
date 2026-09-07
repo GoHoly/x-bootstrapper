@@ -14,6 +14,7 @@ public partial class FastFlagsPage : System.Windows.Controls.UserControl
     {
         InitializeComponent();
         var s = App.Settings.Prop;
+        s.FastFlags ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         FpsBox.SelectedIndex = s.FramerateLimit switch
         {
             60 => 1,

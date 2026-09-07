@@ -43,7 +43,7 @@ public static class ClientLocator
 
     public static IEnumerable<string> CandidateRoots(Settings settings)
     {
-        if (!string.IsNullOrWhiteSpace(settings.ClientDirectory))
+        if (!string.IsNullOrWhiteSpace(settings.ClientDirectory) && FastFlagService.IsSafeClientFolder(settings.ClientDirectory))
             yield return settings.ClientDirectory;
 
         yield return Paths.Base;
@@ -151,7 +151,7 @@ public static class ClientLocator
 
     private static IEnumerable<ClientInstall> FindPlayersInRoot(string root)
     {
-        if (!Directory.Exists(root))
+        if (!Directory.Exists(root) || !FastFlagService.IsSafeClientFolder(root))
             yield break;
 
         var versions = Path.Combine(root, "Versions");
@@ -185,6 +185,9 @@ public static class ClientLocator
                 return null;
 
             var versionDir = Path.GetDirectoryName(path)!;
+            if (!FastFlagService.IsSafeClientFolder(versionDir))
+                return null;
+
             var root = Directory.GetParent(versionDir)?.FullName ?? versionDir;
             return new ClientInstall
             {
@@ -204,7 +207,7 @@ public static class ClientLocator
 
     public static ClientInstall? FindInRoot(string root)
     {
-        if (!Directory.Exists(root))
+        if (!Directory.Exists(root) || !FastFlagService.IsSafeClientFolder(root))
             return null;
 
         var versions = Path.Combine(root, "Versions");

@@ -31,6 +31,7 @@ public partial class App : System.Windows.Application
         Args = LaunchArgs.Parse(e.Args);
         Native.SetAppUserModelId();
         Paths.Initialize(InstallerService.PrepareInstallDirectory());
+        try { Environment.CurrentDirectory = Paths.Base; } catch { /* keep the process cwd if Windows refuses */ }
         Logger.Initialize();
         Logger.Write("App", $"Args: {string.Join(' ', e.Args.Select(RedactArg))}");
 

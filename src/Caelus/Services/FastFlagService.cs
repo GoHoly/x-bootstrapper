@@ -37,6 +37,7 @@ public static class FastFlagService
 
     public static Dictionary<string, string> Build(Settings settings)
     {
+        settings.FastFlags ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var flags = new Dictionary<string, string>(settings.FastFlags, StringComparer.OrdinalIgnoreCase);
 
         if (settings.FramerateLimit > 0)
@@ -136,7 +137,7 @@ public static class FastFlagService
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var install in ClientLocator.FindAll(settings, state, primary))
         {
-            if (!seen.Add(install.VersionDirectory))
+            if (string.IsNullOrWhiteSpace(install.VersionDirectory) || !seen.Add(install.VersionDirectory))
                 continue;
             Apply(install, settings, log && seen.Count == 1);
         }
@@ -148,8 +149,8 @@ public static class FastFlagService
         var written = 0;
         foreach (var path in SettingFiles(install))
         {
-            WriteFile(path, flags);
-            written++;
+            if (WriteFile(path, flags))
+                written++;
         }
 
         if (log)
@@ -168,54 +169,97 @@ public static class FastFlagService
 
     private static IEnumerable<string> SettingFiles(ClientInstall install)
     {
-        yield return Path.Combine(install.VersionDirectory, "ClientSettings", "ClientAppSettings.json");
-
-        if (!string.IsNullOrWhiteSpace(install.Root) &&
-            !string.Equals(install.Root, install.VersionDirectory, StringComparison.OrdinalIgnoreCase))
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var folder in ClientFolders(install))
         {
-            yield return Path.Combine(install.Root, "ClientSettings", "ClientAppSettings.json");
-            yield return Path.Combine(install.Root, "Versions", "ClientSettings", "ClientAppSettings.json");
+            if (!IsSafeClientFolder(folder) || !seen.Add(Path.GetFullPath(folder)))
+                continue;
+            yield return Path.Combine(Path.GetFullPath(folder), "ClientSettings", "ClientAppSettings.json");
+        }
+    }
+
+    private static IEnumerable<string> ClientFolders(ClientInstall install)
+    {
+        if (!string.IsNullOrWhiteSpace(install.VersionDirectory))
+            yield return install.VersionDirectory;
+
+        if (!string.IsNullOrWhiteSpace(install.Root))
+        {
+            yield return install.Root;
+            yield return Path.Combine(install.Root, "Versions");
         }
 
         var exeDir = Path.GetDirectoryName(install.PlayerExecutable);
-        if (!string.IsNullOrWhiteSpace(exeDir) &&
-            !string.Equals(exeDir, install.VersionDirectory, StringComparison.OrdinalIgnoreCase))
-            yield return Path.Combine(exeDir, "ClientSettings", "ClientAppSettings.json");
+        if (!string.IsNullOrWhiteSpace(exeDir))
+            yield return exeDir;
 
-        yield return Path.Combine(Paths.LocalAppData, "Aisaka", "ClientSettings", "ClientAppSettings.json");
+        yield return Path.Combine(Paths.LocalAppData, "Aisaka");
     }
 
-    private static void WriteFile(string path, Dictionary<string, string> flags)
+    internal static bool IsSafeClientFolder(string? folder)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        if (string.IsNullOrWhiteSpace(folder) || !Path.IsPathRooted(folder))
+            return false;
 
-        JsonObject root;
-        if (File.Exists(path))
+        try
         {
-            try
+            var full = Path.GetFullPath(folder);
+            var windows = Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.Windows));
+            return !full.StartsWith(windows, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool WriteFile(string path, Dictionary<string, string> flags)
+    {
+        var directory = Path.GetDirectoryName(path);
+        if (!IsSafeClientFolder(directory))
+        {
+            Logger.Write("FastFlags", $"Skipped unsafe settings path {path}");
+            return false;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(directory!);
+
+            JsonObject root;
+            if (File.Exists(path))
             {
-                root = JsonNode.Parse(File.ReadAllText(path)) as JsonObject ?? new JsonObject();
+                try
+                {
+                    root = JsonNode.Parse(File.ReadAllText(path)) as JsonObject ?? new JsonObject();
+                }
+                catch
+                {
+                    root = new JsonObject();
+                }
             }
-            catch
+            else
             {
                 root = new JsonObject();
             }
+
+            foreach (var key in ManagedKeys)
+            {
+                if (!flags.ContainsKey(key))
+                    root.Remove(key);
+            }
+
+            foreach (var (key, value) in flags)
+                root[key] = JsonValue.Create(ToFlagString(value));
+
+            File.WriteAllText(path, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            return true;
         }
-        else
+        catch (Exception ex)
         {
-            root = new JsonObject();
+            Logger.Write("FastFlags", $"Could not write {path}: {ex.Message}");
+            return false;
         }
-
-        foreach (var key in ManagedKeys)
-        {
-            if (!flags.ContainsKey(key))
-                root.Remove(key);
-        }
-
-        foreach (var (key, value) in flags)
-            root[key] = JsonValue.Create(ToFlagString(value));
-
-        File.WriteAllText(path, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
 
     private static string ToFlagString(string value)
