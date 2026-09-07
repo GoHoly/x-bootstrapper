@@ -25,9 +25,6 @@ public sealed class BootstrapperService
         SetStatus("Connecting to Aisaka...");
         SetProgress(0, indeterminate: true);
 
-        if (_settings.MultiInstance)
-            MultiInstanceService.Enable();
-
         ClientInstall? install = ClientLocator.Find(_settings, _state);
         var payload = ProtocolPayload.TryParse(_args.ProtocolUri);
 
@@ -156,7 +153,7 @@ public sealed class BootstrapperService
     {
         try
         {
-            FastFlagService.Apply(install, _settings, log);
+            FastFlagService.ApplyAll(_settings, _state, install, log);
             ModService.Apply(install, log);
         }
         catch (Exception ex)

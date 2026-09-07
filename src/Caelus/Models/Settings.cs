@@ -44,7 +44,6 @@ public sealed class Settings
     public bool CheckForClientUpdates { get; set; } = true;
     public bool CheckForAppUpdates { get; set; } = true;
     public string GitHubRepository { get; set; } = "";
-    public bool MultiInstance { get; set; }
     public bool ConfirmLaunches { get; set; }
     public bool StayOpenAfterLaunch { get; set; }
     public bool RegisterWebsiteProtocol { get; set; } = true;
@@ -72,4 +71,7 @@ public sealed class AppState
     public string? PlayerExecutable { get; set; }
     public string? StudioExecutable { get; set; }
     public DateTime? LastLaunched { get; set; }
+    public string? LastNotifiedAppVersion { get; set; }
+    public string? SkippedAppVersion { get; set; }
+    public string? PendingUpdateNotice { get; set; }
 }

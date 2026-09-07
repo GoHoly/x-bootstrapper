@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel>
         <TextBlock Text="Fast Flags" Style="{StaticResource PageTitle}"/>
-        <TextBlock Text="Written into ClientAppSettings.json in the Aisaka version folder before every launch."
+        <TextBlock Text="Presets apply as soon as you change them. Custom flags still need Save, or they save when you leave this page."
                    Style="{StaticResource PageSubtitle}"/>
 
         <Border Style="{StaticResource Card}">

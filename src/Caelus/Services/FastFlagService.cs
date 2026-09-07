@@ -7,6 +7,20 @@ namespace Caelus.Services;
 
 public static class FastFlagService
 {
+    private static readonly string[] ManagedKeys =
+    {
+        "DFIntTaskSchedulerTargetFps",
+        "FFlagDebugGraphicsPreferD3D11",
+        "FFlagDebugGraphicsPreferD3D11FL10",
+        "FFlagDebugGraphicsDisableDirect3D11",
+        "FFlagDebugGraphicsDisableD3D11",
+        "FFlagDebugGraphicsPreferVulkan",
+        "FFlagDebugGraphicsPreferOpenGL",
+        "FFlagDisablePostFx",
+        "DFFlagTextureQualityOverrideEnabled",
+        "DFIntTextureQualityOverride"
+    };
+
     public static Dictionary<string, string> Build(Settings settings)
     {
         var flags = new Dictionary<string, string>(settings.FastFlags, StringComparer.OrdinalIgnoreCase);
@@ -19,38 +33,87 @@ public static class FastFlagService
         switch (settings.RenderingMode)
         {
             case RenderingMode.Direct3D11:
-                flags["FFlagDebugGraphicsPreferD3D11"] = "true";
-                flags["FFlagDebugGraphicsDisableDirect3D11"] = "false";
+                flags["FFlagDebugGraphicsPreferD3D11"] = "True";
+                flags["FFlagDebugGraphicsPreferD3D11FL10"] = "True";
+                flags["FFlagDebugGraphicsDisableDirect3D11"] = "False";
+                flags["FFlagDebugGraphicsDisableD3D11"] = "False";
+                flags["FFlagDebugGraphicsPreferVulkan"] = "False";
+                flags["FFlagDebugGraphicsPreferOpenGL"] = "False";
                 break;
             case RenderingMode.Vulkan:
-                flags["FFlagDebugGraphicsPreferVulkan"] = "true";
+                flags["FFlagDebugGraphicsPreferVulkan"] = "True";
+                flags["FFlagDebugGraphicsPreferD3D11"] = "False";
+                flags["FFlagDebugGraphicsPreferD3D11FL10"] = "False";
+                flags["FFlagDebugGraphicsDisableDirect3D11"] = "True";
+                flags["FFlagDebugGraphicsDisableD3D11"] = "True";
+                flags["FFlagDebugGraphicsPreferOpenGL"] = "False";
                 break;
             case RenderingMode.OpenGL:
-                flags["FFlagDebugGraphicsPreferOpenGL"] = "true";
+                flags["FFlagDebugGraphicsPreferOpenGL"] = "True";
+                flags["FFlagDebugGraphicsPreferD3D11"] = "False";
+                flags["FFlagDebugGraphicsPreferD3D11FL10"] = "False";
+                flags["FFlagDebugGraphicsDisableDirect3D11"] = "True";
+                flags["FFlagDebugGraphicsDisableD3D11"] = "True";
+                flags["FFlagDebugGraphicsPreferVulkan"] = "False";
                 break;
         }
 
         if (settings.DisablePostFx)
-            flags["FFlagDisablePostFx"] = "true";
+            flags["FFlagDisablePostFx"] = "True";
 
         if (settings.TextureQuality >= 0)
         {
-            flags["DFFlagTextureQualityOverrideEnabled"] = "true";
+            flags["DFFlagTextureQualityOverrideEnabled"] = "True";
             flags["DFIntTextureQualityOverride"] = settings.TextureQuality.ToString();
         }
 
         return flags;
     }
 
+    public static void ApplyAll(Settings settings, AppState state, ClientInstall? primary, bool log = true)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var install in ClientLocator.FindAll(settings, state, primary))
+        {
+            if (!seen.Add(install.VersionDirectory))
+                continue;
+            Apply(install, settings, log && seen.Count == 1);
+        }
+    }
+
     public static void Apply(ClientInstall install, Settings settings, bool log = true)
     {
         var flags = Build(settings);
-        var directory = Path.Combine(install.VersionDirectory, "ClientSettings");
-        Directory.CreateDirectory(directory);
+        var written = 0;
+        foreach (var path in SettingFiles(install))
+        {
+            WriteFile(path, flags);
+            written++;
+        }
 
-        var path = Path.Combine(directory, "ClientAppSettings.json");
+        if (log)
+            Logger.Write("FastFlags", $"Wrote {flags.Count} flag(s) to {written} ClientAppSettings.json file(s) under {install.VersionDirectory}");
+    }
+
+    private static IEnumerable<string> SettingFiles(ClientInstall install)
+    {
+        yield return Path.Combine(install.VersionDirectory, "ClientSettings", "ClientAppSettings.json");
+
+        if (!string.IsNullOrWhiteSpace(install.Root) &&
+            !string.Equals(install.Root, install.VersionDirectory, StringComparison.OrdinalIgnoreCase))
+            yield return Path.Combine(install.Root, "ClientSettings", "ClientAppSettings.json");
+
+        var exeDir = Path.GetDirectoryName(install.PlayerExecutable);
+        if (!string.IsNullOrWhiteSpace(exeDir) &&
+            !string.Equals(exeDir, install.VersionDirectory, StringComparison.OrdinalIgnoreCase))
+            yield return Path.Combine(exeDir, "ClientSettings", "ClientAppSettings.json");
+    }
+
+    private static void WriteFile(string path, Dictionary<string, string> flags)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
         JsonObject root;
-
         if (File.Exists(path))
         {
             try
@@ -67,22 +130,22 @@ public static class FastFlagService
             root = new JsonObject();
         }
 
+        foreach (var key in ManagedKeys)
+        {
+            if (!flags.ContainsKey(key))
+                root.Remove(key);
+        }
+
         foreach (var (key, value) in flags)
-            root[key] = ToJsonValue(value);
+            root[key] = JsonValue.Create(ToFlagString(value));
 
         File.WriteAllText(path, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
-        if (log)
-            Logger.Write("FastFlags", $"Wrote {flags.Count} flag(s) to {path}");
     }
 
-    private static JsonNode ToJsonValue(string value)
+    private static string ToFlagString(string value)
     {
         if (bool.TryParse(value, out var boolean))
-            return JsonValue.Create(boolean)!;
-        if (long.TryParse(value, out var number))
-            return JsonValue.Create(number)!;
-        if (double.TryParse(value, out var real))
-            return JsonValue.Create(real)!;
-        return JsonValue.Create(value)!;
+            return boolean ? "True" : "False";
+        return value;
     }
 }

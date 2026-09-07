@@ -8,6 +8,7 @@ public static class WindowsAppRegistration
     public static void Register()
     {
         var exe = File.Exists(Paths.Executable) ? Paths.Executable : Environment.ProcessPath!;
+        var uninstallCommand = $"\"{exe}\" -uninstall";
 
         if (!File.Exists(Path.Combine(Paths.Base, "unins000.exe")))
         {
@@ -20,13 +21,16 @@ public static class WindowsAppRegistration
                     key.SetValue("DisplayIcon", exe);
                     key.SetValue("Publisher", AppInfo.Name);
                     key.SetValue("InstallLocation", Paths.Base);
-                    key.SetValue("UninstallString", $"\"{exe}\" -uninstall");
+                    key.SetValue("UninstallString", uninstallCommand);
+                    key.SetValue("QuietUninstallString", uninstallCommand);
                     key.SetValue("DisplayVersion", AppInfo.Version);
                     key.SetValue("NoModify", 1, RegistryValueKind.DWord);
                     key.SetValue("NoRepair", 1, RegistryValueKind.DWord);
                 }
             }
         }
+
+        RedirectSetupUninstall(exe, uninstallCommand);
 
         using (var key = Registry.CurrentUser.CreateSubKey($@"Software\Microsoft\Windows\CurrentVersion\App Paths\{AppInfo.ExeFileName}"))
         {
@@ -50,6 +54,25 @@ public static class WindowsAppRegistration
         TryDeleteKey(Registry.CurrentUser, $@"Software\Microsoft\Windows\CurrentVersion\App Paths\{AppInfo.ExeFileName}");
         TryDeleteKey(Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\App Paths\Caelus.exe");
         TryDeleteKey(Registry.CurrentUser, @"Software\Classes\Applications\Caelus.exe");
+    }
+
+    private static void RedirectSetupUninstall(string exe, string uninstallCommand)
+    {
+        var path = $@"Software\Microsoft\Windows\CurrentVersion\Uninstall\{AppInfo.SetupAppId}_is1";
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(path, writable: true);
+            if (key is null)
+                return;
+
+            key.SetValue("UninstallString", uninstallCommand);
+            key.SetValue("QuietUninstallString", uninstallCommand);
+            key.SetValue("DisplayIcon", exe);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("WindowsApp", ex);
+        }
     }
 
     private static void WriteFolderIcon(string exe)

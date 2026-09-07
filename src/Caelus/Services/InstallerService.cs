@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Caelus.Core;
 using Caelus.Models;
@@ -55,23 +56,92 @@ public static class InstallerService
         Native.NotifyShell();
     }
 
-    public static void Uninstall(Settings settings, bool removeClient)
+    public static void Uninstall(Settings settings, bool removeClient, bool removeData = false)
     {
         ProtocolService.Unregister();
         ShortcutService.RemoveAll();
         WindowsAppRegistration.Unregister();
 
-        if (removeClient)
+        if (removeClient || removeData)
         {
             TryDeleteDirectory(Paths.Versions);
             TryDeleteDirectory(Paths.Downloads);
         }
 
         settings.Installed = false;
-        TryDelete(Paths.Executable);
-        StripLegacyBinaries(Paths.Base);
-        Logger.Write("Installer", $"Uninstalled {AppInfo.Name}");
+        Logger.Write("Installer", removeData
+            ? $"Uninstalled {AppInfo.Name} and deleted all contents"
+            : $"Uninstalled {AppInfo.Name}");
         Native.NotifyShell();
+
+        if (removeData)
+        {
+            Logger.Close();
+            TryDeleteDirectory(Paths.Modifications);
+            TryDeleteDirectory(Paths.Logs);
+            TryDelete(Paths.Settings);
+            TryDelete(Paths.State);
+            TryDelete(Path.Combine(Paths.Base, "desktop.ini"));
+            TryDeleteDirectory(Paths.LegacyBase);
+            TryDeleteDirectory(Paths.PreviousBase);
+        }
+
+        var setupUninstaller = TryLaunchSetupUninstaller();
+        if (!setupUninstaller)
+        {
+            TryDelete(Paths.Executable);
+            StripLegacyBinaries(Paths.Base);
+        }
+
+        if (removeData)
+            ScheduleDeleteInstallFolder(waitSeconds: setupUninstaller ? 8 : 3);
+    }
+
+    private static void ScheduleDeleteInstallFolder(int waitSeconds)
+    {
+        try
+        {
+            var delay = Math.Max(2, waitSeconds);
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c ping 127.0.0.1 -n {delay} > nul & rmdir /s /q \"{Paths.Base}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Installer", ex);
+        }
+    }
+
+    private static bool TryLaunchSetupUninstaller()
+    {
+        try
+        {
+            if (!Directory.Exists(Paths.Base))
+                return false;
+
+            var setup = Directory.EnumerateFiles(Paths.Base, "unins*.exe")
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+            if (setup is null)
+                return false;
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = setup,
+                Arguments = "/VERYSILENT /NORESTART /SUPPRESSMSGBOXES /FORCECLOSEAPPLICATIONS /fromapp=1",
+                UseShellExecute = true
+            });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Installer", ex);
+            return false;
+        }
     }
 
     public static void CopyPayload(string sourceExe, string destinationExe)

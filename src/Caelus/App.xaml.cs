@@ -13,6 +13,7 @@ public partial class App : System.Windows.Application
     public static LaunchArgs Args { get; private set; } = new();
     public static DiscordService? Discord { get; set; }
     public static ProcessWatch? Watch { get; set; }
+    public static bool SuppressSave { get; set; }
 
     private Mutex? _mutex;
 
@@ -81,9 +82,15 @@ public partial class App : System.Windows.Application
 
         if (Args.Mode == LaunchMode.Uninstall)
         {
-            InstallerService.Uninstall(Settings.Prop, removeClient: false);
-            Settings.Save();
-            Shutdown();
+            if (Args.Quiet)
+            {
+                InstallerService.Uninstall(Settings.Prop, removeClient: false);
+                Settings.Save();
+                Shutdown();
+                return;
+            }
+
+            new UninstallWindow().Show();
             return;
         }
 
@@ -96,7 +103,14 @@ public partial class App : System.Windows.Application
         }
 
         if (Args.SkipUpdate)
-            NotifyService.Show(AppInfo.Name, $"Updated to {AppInfo.Version}.");
+        {
+            var notice = State.Prop.PendingUpdateNotice;
+            NotifyService.Show(AppInfo.Name, string.IsNullOrWhiteSpace(notice)
+                ? $"Updated to {AppInfo.Version}."
+                : notice);
+            State.Prop.PendingUpdateNotice = null;
+            State.Save();
+        }
 
         if (!InstallerService.IsInstalled(Settings.Prop) && Args.Mode == LaunchMode.Menu)
         {
@@ -119,7 +133,7 @@ public partial class App : System.Windows.Application
 
         new MenuWindow().Show();
 
-        if (Settings.Prop.CheckForAppUpdates && !Args.SkipUpdate)
+        if (!Args.SkipUpdate)
             _ = AppUpdateService.CheckInBackgroundAsync(Args);
     }
 
@@ -150,7 +164,8 @@ public partial class App : System.Windows.Application
     {
         Discord?.Dispose();
         NotifyService.Dispose();
-        Save();
+        if (!SuppressSave)
+            Save();
         Logger.Close();
         _mutex?.Dispose();
         base.OnExit(e);

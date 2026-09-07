@@ -7,6 +7,8 @@ namespace Caelus.UI.Pages;
 
 public partial class FastFlagsPage : System.Windows.Controls.UserControl
 {
+    private bool _ready;
+
     public FastFlagsPage()
     {
         InitializeComponent();
@@ -24,10 +26,27 @@ public partial class FastFlagsPage : System.Windows.Controls.UserControl
         TextureBox.SelectedIndex = s.TextureQuality < 0 ? 0 : Math.Clamp(s.TextureQuality + 1, 0, 3);
         PostFxBox.IsChecked = s.DisablePostFx;
         FlagsBox.Text = string.Join(Environment.NewLine, s.FastFlags.Select(kv => $"{kv.Key}={kv.Value}"));
+
+        FpsBox.SelectionChanged += (_, _) => Write(presetsOnly: true);
+        RenderBox.SelectionChanged += (_, _) => Write(presetsOnly: true);
+        TextureBox.SelectionChanged += (_, _) => Write(presetsOnly: true);
+        PostFxBox.Checked += (_, _) => Write(presetsOnly: true);
+        PostFxBox.Unchecked += (_, _) => Write(presetsOnly: true);
+        Unloaded += (_, _) => Write(presetsOnly: false);
+        _ready = true;
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
+        Write(presetsOnly: false);
+        System.Windows.MessageBox.Show("Flags are saved. They are written into the client the next time you launch.", AppInfo.Name);
+    }
+
+    private void Write(bool presetsOnly)
+    {
+        if (!_ready)
+            return;
+
         var s = App.Settings.Prop;
         s.FramerateLimit = FpsBox.SelectedIndex switch
         {
@@ -42,16 +61,19 @@ public partial class FastFlagsPage : System.Windows.Controls.UserControl
         s.TextureQuality = TextureBox.SelectedIndex <= 0 ? -1 : TextureBox.SelectedIndex - 1;
         s.DisablePostFx = PostFxBox.IsChecked == true;
 
-        var flags = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var line in FlagsBox.Text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+        if (!presetsOnly)
         {
-            var parts = line.Split('=', 2);
-            if (parts.Length == 2 && !string.IsNullOrWhiteSpace(parts[0]))
-                flags[parts[0].Trim()] = parts[1].Trim();
+            var flags = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var line in FlagsBox.Text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var parts = line.Split('=', 2);
+                if (parts.Length == 2 && !string.IsNullOrWhiteSpace(parts[0]))
+                    flags[parts[0].Trim()] = parts[1].Trim();
+            }
+
+            s.FastFlags = flags;
         }
 
-        s.FastFlags = flags;
         App.Save();
-        System.Windows.MessageBox.Show("FastFlags will be written on the next launch.", AppInfo.Name);
     }
 }

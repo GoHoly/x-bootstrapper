@@ -15,12 +15,11 @@ The app auto-updates from GitHub Releases when you open the menu.
 ## Features
 
 - Mods, Fast Flags, and launcher themes (including xyxy light/dark)
-- Windows notifications when a game or Aisaka finishes loading
-- Auto-update from this repository
+- Windows notifications when a game or Aisaka finishes loading, and when a new launcher version is out
+- Auto-update from this repository, or pick a previous version on the Install tab
 - `aisaka-player://` / `aisaka-launcher://` handlers for Play on aisaka.me
 - Optional `roblox-player://` handler
 - Discord Rich Presence over local IPC
-- Multi-instance (holds `ROBLOX_singletonEvent`)
 
 ## Build
 

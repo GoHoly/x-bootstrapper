@@ -82,6 +82,49 @@ public static class ClientLocator
         return null;
     }
 
+    public static IEnumerable<ClientInstall> FindAll(Settings settings, AppState state, ClientInstall? primary = null)
+    {
+        if (primary is not null)
+            yield return primary;
+
+        foreach (var root in CandidateRoots(settings).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            foreach (var install in FindPlayersInRoot(root))
+                yield return install;
+        }
+
+        var fromState = Find(settings, state);
+        if (fromState is not null)
+            yield return fromState;
+    }
+
+    private static IEnumerable<ClientInstall> FindPlayersInRoot(string root)
+    {
+        if (!Directory.Exists(root))
+            yield break;
+
+        var versions = Path.Combine(root, "Versions");
+        if (!Directory.Exists(versions))
+            yield break;
+
+        foreach (var versionDir in Directory.GetDirectories(versions).OrderByDescending(Directory.GetLastWriteTimeUtc))
+        {
+            var player = FindFile(versionDir, PlayerNames);
+            if (player is null)
+                continue;
+
+            yield return new ClientInstall
+            {
+                Root = root,
+                VersionDirectory = versionDir,
+                PlayerExecutable = player,
+                StudioExecutable = FindFile(versionDir, StudioNames) ?? FindFile(root, StudioNames),
+                LauncherExecutable = FindFile(root, LauncherNames),
+                VersionGuid = Path.GetFileName(versionDir)
+            };
+        }
+    }
+
     public static ClientInstall? FromPlayerProcess(Process process)
     {
         try

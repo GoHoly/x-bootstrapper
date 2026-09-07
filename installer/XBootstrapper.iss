@@ -1,5 +1,5 @@
 #define MyAppName "X Bootstrapper"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "X Bootstrapper"
 #define MyAppExeName "X Bootstrapper.exe"
 #define MyAppURL "https://www.aisaka.me"
@@ -62,3 +62,18 @@ Root: HKCU; Subkey: "Software\Classes\caelus-launcher\shell\open\command"; Value
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Parameters: "-menu"; Description: "Open {#MyAppName}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+function InitializeUninstall(): Boolean;
+var
+  ResultCode: Integer;
+begin
+  if ExpandConstant('{param:fromapp|0}') = '1' then
+  begin
+    Result := True;
+    exit;
+  end;
+
+  Result := False;
+  Exec(ExpandConstant('{app}\{#MyAppExeName}'), '-uninstall', '', SW_SHOWNORMAL, ewNoWait, ResultCode);
+end;

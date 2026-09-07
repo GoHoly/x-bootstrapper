@@ -3,8 +3,31 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel>
         <TextBlock Text="Install" Style="{StaticResource PageTitle}"/>
-        <TextBlock Text="Where X Bootstrapper lives, and where it should look for the Aisaka client."
+        <TextBlock Text="Where X Bootstrapper lives, client paths, and which launcher version you want."
                    Style="{StaticResource PageSubtitle}"/>
+
+        <Border x:Name="UpdateBanner" Style="{StaticResource Card}" Visibility="Collapsed">
+            <StackPanel>
+                <TextBlock x:Name="UpdateBannerTitle" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                <TextBlock x:Name="UpdateBannerBody" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,12" FontSize="12"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button x:Name="UpdateNowButton" Content="Update now" Style="{StaticResource AccentButton}" Click="UpdateNow_Click"/>
+                    <Button Content="Not now" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="SkipUpdate_Click"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="X Bootstrapper versions" FontWeight="SemiBold"/>
+                <TextBlock x:Name="CurrentVersionText" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,8" FontSize="12"/>
+                <CheckBox x:Name="AppUpdatesBox" Content="Auto-update when a new GitHub release is published"/>
+                <TextBlock Text="Previous versions" FontWeight="SemiBold" Margin="0,16,0,6"/>
+                <TextBlock x:Name="VersionsStatus" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,0,0,8" Text="Loading releases…"/>
+                <StackPanel x:Name="VersionList"/>
+                <Button Content="Refresh" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,10,0,0" Click="RefreshVersions_Click"/>
+            </StackPanel>
+        </Border>
 
         <Border Style="{StaticResource Card}">
             <StackPanel>
@@ -43,6 +66,16 @@
                     <Button Content="Re-register" Style="{StaticResource GhostButton}" Click="Register_Click"/>
                     <Button Content="Save" Style="{StaticResource AccentButton}" Margin="8,0,0,0" Click="Save_Click"/>
                 </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Uninstall" FontWeight="SemiBold"/>
+                <TextBlock Text="Opens the uninstaller. Shortcuts, protocols, and X Bootstrapper are removed if you confirm."
+                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,8" FontSize="12"/>
+                <CheckBox x:Name="WipeBox" Content="Uninstall all contents (mods, presets, settings, logs, client files)"/>
+                <Button Content="Uninstall X Bootstrapper" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,10,0,0" Click="Uninstall_Click"/>
             </StackPanel>
         </Border>
     </StackPanel>

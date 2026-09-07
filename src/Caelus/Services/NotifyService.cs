@@ -54,7 +54,7 @@ internal static class NotifyService
             xml.LoadXml(payload.ToString(SaveOptions.DisableFormatting));
             var toast = new ToastNotification(xml)
             {
-                ExpirationTime = DateTimeOffset.Now.AddSeconds(8)
+                ExpirationTime = DateTimeOffset.Now.AddSeconds(12)
             };
             ToastNotificationManager.CreateToastNotifier(AppInfo.AppUserModelId).Show(toast);
             return true;
