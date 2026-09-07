@@ -1,0 +1,31 @@
+<UserControl x:Class="Caelus.UI.Pages.AppearancePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="Appearance" Style="{StaticResource PageTitle}"/>
+        <TextBlock Text="The launcher itself, not the 2021 client. Pick a skin and it applies immediately."
+                   Style="{StaticResource PageSubtitle}"/>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Theme" FontWeight="SemiBold"/>
+                <TextBlock Text="These only change X Bootstrapper. Aisaka keeps whatever you threw in Mods."
+                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,14" FontSize="12"/>
+                <WrapPanel x:Name="ThemePanel"/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Launch window" FontWeight="SemiBold"/>
+                <TextBlock Text="The small dialog while Aisaka is starting."
+                           Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,10" FontSize="12"/>
+                <ComboBox x:Name="StyleBox">
+                    <ComboBoxItem Content="Match theme"/>
+                    <ComboBoxItem Content="2013 gray"/>
+                </ComboBox>
+                <CheckBox x:Name="SoundsBox" Content="UI sounds" Margin="0,12,0,0"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

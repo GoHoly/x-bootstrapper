@@ -1,0 +1,19 @@
+<UserControl x:Class="Caelus.UI.Pages.IntegrationsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="Integrations" Style="{StaticResource PageTitle}"/>
+        <TextBlock Text="Optional extras that sit on top of the Aisaka client."
+                   Style="{StaticResource PageSubtitle}"/>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <CheckBox x:Name="DiscordBox" Content="Discord Rich Presence"/>
+                <TextBlock Text="Paste a Discord application client ID. X Bootstrapper talks to Discord locally over IPC."
+                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,10" FontSize="12"/>
+                <TextBox x:Name="DiscordIdBox"/>
+                <CheckBox x:Name="ActivityBox" Content="Track the launched place ID" Margin="0,8,0,0"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

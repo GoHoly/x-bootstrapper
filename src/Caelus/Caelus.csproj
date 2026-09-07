@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\caelus.ico</ApplicationIcon>
+    <RootNamespace>Caelus</RootNamespace>
+    <AssemblyName>X Bootstrapper</AssemblyName>
+    <Version>1.0.0</Version>
+    <AssemblyTitle>X Bootstrapper</AssemblyTitle>
+    <Company>X Bootstrapper</Company>
+    <Product>X Bootstrapper</Product>
+    <Description>A bootstrapper for the Aisaka 2021 revival.</Description>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="Assets\caelus.png" />
+    <Resource Include="Assets\caelus.ico" />
+    <Resource Include="Assets\x-mark.png" />
+    <Resource Include="Assets\x-banner.png" />
+  </ItemGroup>
+</Project>

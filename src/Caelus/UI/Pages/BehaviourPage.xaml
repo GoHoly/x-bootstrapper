@@ -1,0 +1,19 @@
+<UserControl x:Class="Caelus.UI.Pages.BehaviourPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="Behaviour" Style="{StaticResource PageTitle}"/>
+        <TextBlock Text="How X Bootstrapper launches, and whether it hangs around after."
+                   Style="{StaticResource PageSubtitle}"/>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <CheckBox x:Name="UpdatesBox" Content="Check Aisaka for a newer client before launching"/>
+                <CheckBox x:Name="AppUpdatesBox" Content="Auto-update X Bootstrapper from GitHub"/>
+                <CheckBox x:Name="MultiBox" Content="Allow more than one Aisaka at once"/>
+                <CheckBox x:Name="ConfirmBox" Content="Ask before launching"/>
+                <CheckBox x:Name="StayBox" Content="Keep X Bootstrapper open after the client starts"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

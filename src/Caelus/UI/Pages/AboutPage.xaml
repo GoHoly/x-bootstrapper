@@ -1,0 +1,28 @@
+<UserControl x:Class="Caelus.UI.Pages.AboutPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="About" Style="{StaticResource PageTitle}"/>
+        <TextBlock Text="What this is, and what it is not."
+                   Style="{StaticResource PageSubtitle}"/>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <Border Height="72" CornerRadius="6" Background="#0B0B0D" ClipToBounds="True" Margin="0,0,0,14">
+                    <Image Source="/Assets/x-banner.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
+                </Border>
+                <TextBlock x:Name="VersionText" FontSize="16" FontWeight="SemiBold"/>
+                <TextBlock TextWrapping="Wrap" Margin="0,10,0,0" Foreground="{DynamicResource MutedBrush}"
+                           Text="X Bootstrapper is a local launcher for Aisaka. It starts the 2021 client, then copies FastFlags and mods onto the version folder."/>
+                <TextBlock TextWrapping="Wrap" Margin="0,10,0,0" Foreground="{DynamicResource MutedBrush}"
+                           Text="Not affiliated with Roblox Corporation. Aisaka is a third-party revival at aisaka.me."/>
+                <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                    <Button Content="aisaka.me" Style="{StaticResource AccentButton}" Click="Website_Click"/>
+                    <Button Content="GitHub" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="GitHub_Click"/>
+                    <Button Content="Discord" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="Discord_Click"/>
+                    <Button Content="Logs" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="Logs_Click"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,48 @@
+<UserControl x:Class="Caelus.UI.Pages.FastFlagsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel>
+        <TextBlock Text="Fast Flags" Style="{StaticResource PageTitle}"/>
+        <TextBlock Text="Written into ClientAppSettings.json in the Aisaka version folder before every launch."
+                   Style="{StaticResource PageSubtitle}"/>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Presets" FontWeight="SemiBold"/>
+                <TextBlock Text="Framerate cap" Style="{StaticResource FieldLabel}" Margin="0,12,0,6"/>
+                <ComboBox x:Name="FpsBox">
+                    <ComboBoxItem Content="Default"/>
+                    <ComboBoxItem Content="60"/>
+                    <ComboBoxItem Content="120"/>
+                    <ComboBoxItem Content="144"/>
+                    <ComboBoxItem Content="240"/>
+                    <ComboBoxItem Content="Unlimited"/>
+                </ComboBox>
+                <TextBlock Text="Renderer" Style="{StaticResource FieldLabel}" Margin="0,12,0,6"/>
+                <ComboBox x:Name="RenderBox">
+                    <ComboBoxItem Content="Automatic"/>
+                    <ComboBoxItem Content="Direct3D 11"/>
+                    <ComboBoxItem Content="Vulkan"/>
+                    <ComboBoxItem Content="OpenGL"/>
+                </ComboBox>
+                <TextBlock Text="Texture quality" Style="{StaticResource FieldLabel}" Margin="0,12,0,6"/>
+                <ComboBox x:Name="TextureBox">
+                    <ComboBoxItem Content="Default"/>
+                    <ComboBoxItem Content="Low"/>
+                    <ComboBoxItem Content="Medium"/>
+                    <ComboBoxItem Content="High"/>
+                </ComboBox>
+                <CheckBox x:Name="PostFxBox" Content="Disable post-processing"/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Custom flags" FontWeight="SemiBold"/>
+                <TextBlock Text="One per line, Name=Value" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,10" FontSize="12"/>
+                <TextBox x:Name="FlagsBox" Height="180" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12"/>
+                <Button Content="Save flags" Style="{StaticResource AccentButton}" HorizontalAlignment="Left" Margin="0,12,0,0" Click="Save_Click"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>
