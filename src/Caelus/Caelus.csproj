@@ -11,7 +11,7 @@
     <ApplicationIcon>Assets\caelus.ico</ApplicationIcon>
     <RootNamespace>Caelus</RootNamespace>
     <AssemblyName>X Bootstrapper</AssemblyName>
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
     <AssemblyTitle>X Bootstrapper</AssemblyTitle>
     <Company>X Bootstrapper</Company>
     <Product>X Bootstrapper</Product>

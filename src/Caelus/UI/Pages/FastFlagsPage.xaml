@@ -35,6 +35,10 @@
                     <ComboBoxItem Content="High"/>
                 </ComboBox>
                 <CheckBox x:Name="PostFxBox" Content="Disable post-processing"/>
+                <CheckBox x:Name="FpsCounterBox" Content="Show FPS counter" Margin="0,10,0,0"/>
+                <CheckBox x:Name="PerfBox" Content="Performance mode" Margin="0,8,0,0"/>
+                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0" FontSize="12"
+                           Text="Performance mode unlocks FPS, shows the counter, and cuts post-processing, MSAA, grass, and extra lighting work. It does not turn Direct3D 11 off."/>
             </StackPanel>
         </Border>
 

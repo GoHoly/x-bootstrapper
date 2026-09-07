@@ -26,6 +26,8 @@ public partial class FastFlagsPage : System.Windows.Controls.UserControl
         RenderBox.SelectedIndex = (int)s.RenderingMode;
         TextureBox.SelectedIndex = s.TextureQuality < 0 ? 0 : Math.Clamp(s.TextureQuality + 1, 0, 3);
         PostFxBox.IsChecked = s.DisablePostFx;
+        FpsCounterBox.IsChecked = s.ShowFpsCounter;
+        PerfBox.IsChecked = s.PerformanceMode;
         FlagsBox.Text = string.Join(Environment.NewLine, s.FastFlags.Select(kv => $"{kv.Key}={kv.Value}"));
 
         FpsBox.SelectionChanged += (_, _) => Write(presetsOnly: true);
@@ -36,6 +38,17 @@ public partial class FastFlagsPage : System.Windows.Controls.UserControl
         TextureBox.DropDownClosed += (_, _) => Write(presetsOnly: true);
         PostFxBox.Checked += (_, _) => Write(presetsOnly: true);
         PostFxBox.Unchecked += (_, _) => Write(presetsOnly: true);
+        FpsCounterBox.Checked += (_, _) => Write(presetsOnly: true);
+        FpsCounterBox.Unchecked += (_, _) => Write(presetsOnly: true);
+        PerfBox.Checked += (_, _) =>
+        {
+            if (FpsBox.SelectedIndex == 0)
+                FpsBox.SelectedIndex = 5;
+            PostFxBox.IsChecked = true;
+            FpsCounterBox.IsChecked = true;
+            Write(presetsOnly: true);
+        };
+        PerfBox.Unchecked += (_, _) => Write(presetsOnly: true);
         Unloaded += (_, _) => Write(presetsOnly: false);
         _ready = true;
     }
@@ -68,6 +81,8 @@ public partial class FastFlagsPage : System.Windows.Controls.UserControl
         s.RenderingMode = (RenderingMode)Math.Clamp(RenderBox.SelectedIndex, 0, 3);
         s.TextureQuality = TextureBox.SelectedIndex <= 0 ? -1 : TextureBox.SelectedIndex - 1;
         s.DisablePostFx = PostFxBox.IsChecked == true;
+        s.ShowFpsCounter = FpsCounterBox.IsChecked == true;
+        s.PerformanceMode = PerfBox.IsChecked == true;
 
         if (!presetsOnly)
         {

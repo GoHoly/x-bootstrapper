@@ -57,6 +57,8 @@ public sealed class Settings
     public RenderingMode RenderingMode { get; set; } = RenderingMode.Automatic;
     public bool DisablePostFx { get; set; }
     public int TextureQuality { get; set; } = -1;
+    public bool ShowFpsCounter { get; set; } = true;
+    public bool PerformanceMode { get; set; } = true;
     public int FlagPresetRevision { get; set; }
 
     public Dictionary<string, string> FastFlags { get; set; } = new(StringComparer.OrdinalIgnoreCase);

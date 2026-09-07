@@ -20,7 +20,19 @@ public static class FastFlagService
         "FFlagDebugGraphicsPreferD3D9",
         "FFlagDisablePostFx",
         "DFFlagTextureQualityOverrideEnabled",
-        "DFIntTextureQualityOverride"
+        "DFIntTextureQualityOverride",
+        "FFlagDebugDisplayFPS",
+        "DFFlagDebugDisplayFPS",
+        "FFlagTaskSchedulerLimitTargetFpsTo2402",
+        "FFlagTaskSchedulerLimitTargetFpsTo240",
+        "FIntRenderLocalLightUpdatesMax",
+        "FIntRenderLocalLightUpdatesMin",
+        "FIntRenderLocalLightFadeInMs",
+        "DFIntDebugFRMOptionalMSAALevelOverride",
+        "FIntDebugForceMSAASamples",
+        "FIntFRMMinGrassDistance",
+        "FIntFRMMaxGrassDistance",
+        "DFFlagDebugPauseVoxelizer"
     };
 
     public static Dictionary<string, string> Build(Settings settings)
@@ -49,7 +61,7 @@ public static class FastFlagService
         flags.Remove("FFlagDebugGraphicsDisableDirect3D11");
         flags.Remove("FFlagDebugGraphicsDisableD3D11");
 
-        if (settings.DisablePostFx)
+        if (settings.DisablePostFx || settings.PerformanceMode)
             flags["FFlagDisablePostFx"] = "True";
 
         if (settings.TextureQuality >= 0)
@@ -58,21 +70,65 @@ public static class FastFlagService
             flags["DFIntTextureQualityOverride"] = settings.TextureQuality.ToString();
         }
 
+        if (settings.ShowFpsCounter || settings.PerformanceMode)
+        {
+            flags["FFlagDebugDisplayFPS"] = "True";
+            flags["DFFlagDebugDisplayFPS"] = "True";
+        }
+
+        if (settings.PerformanceMode)
+        {
+            if (settings.FramerateLimit == 0)
+                flags["DFIntTaskSchedulerTargetFps"] = "9999";
+
+            flags["FFlagTaskSchedulerLimitTargetFpsTo2402"] = "False";
+            flags["FFlagTaskSchedulerLimitTargetFpsTo240"] = "False";
+            flags["FIntRenderLocalLightUpdatesMax"] = "1";
+            flags["FIntRenderLocalLightUpdatesMin"] = "1";
+            flags["FIntRenderLocalLightFadeInMs"] = "0";
+            flags["DFIntDebugFRMOptionalMSAALevelOverride"] = "0";
+            flags["FIntDebugForceMSAASamples"] = "0";
+            flags["FIntFRMMinGrassDistance"] = "0";
+            flags["FIntFRMMaxGrassDistance"] = "0";
+            flags["DFFlagDebugPauseVoxelizer"] = "True";
+
+            if (settings.RenderingMode == RenderingMode.Automatic)
+                SetRendererPreference(flags, d3d11: true);
+        }
+
         return flags;
     }
 
-    public const int CurrentPresetRevision = 2;
+    public const int CurrentPresetRevision = 3;
 
     public static bool MigratePresets(Settings settings)
     {
-        if (settings.FlagPresetRevision >= CurrentPresetRevision)
-            return false;
+        var changed = false;
 
-        if (settings.RenderingMode is RenderingMode.OpenGL or RenderingMode.Vulkan)
+        if (settings.FlagPresetRevision < 2 &&
+            settings.RenderingMode is RenderingMode.OpenGL or RenderingMode.Vulkan)
+        {
             settings.RenderingMode = RenderingMode.Direct3D11;
+            changed = true;
+        }
 
-        settings.FlagPresetRevision = CurrentPresetRevision;
-        return true;
+        if (settings.FlagPresetRevision < 3)
+        {
+            settings.ShowFpsCounter = true;
+            settings.PerformanceMode = true;
+            if (settings.FramerateLimit == 0)
+                settings.FramerateLimit = -1;
+            settings.DisablePostFx = true;
+            changed = true;
+        }
+
+        if (settings.FlagPresetRevision < CurrentPresetRevision)
+        {
+            settings.FlagPresetRevision = CurrentPresetRevision;
+            changed = true;
+        }
+
+        return changed;
     }
 
     public static void ApplyAll(Settings settings, AppState state, ClientInstall? primary, bool log = true)
