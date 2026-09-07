@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Caelus.Core;
 using Caelus.Models;
+using Caelus.Services;
 
 namespace Caelus.UI.Pages;
 
@@ -30,16 +31,23 @@ public partial class FastFlagsPage : System.Windows.Controls.UserControl
         FpsBox.SelectionChanged += (_, _) => Write(presetsOnly: true);
         RenderBox.SelectionChanged += (_, _) => Write(presetsOnly: true);
         TextureBox.SelectionChanged += (_, _) => Write(presetsOnly: true);
+        FpsBox.DropDownClosed += (_, _) => Write(presetsOnly: true);
+        RenderBox.DropDownClosed += (_, _) => Write(presetsOnly: true);
+        TextureBox.DropDownClosed += (_, _) => Write(presetsOnly: true);
         PostFxBox.Checked += (_, _) => Write(presetsOnly: true);
         PostFxBox.Unchecked += (_, _) => Write(presetsOnly: true);
         Unloaded += (_, _) => Write(presetsOnly: false);
         _ready = true;
     }
 
+    public void Flush() => Write(presetsOnly: false);
+
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         Write(presetsOnly: false);
-        System.Windows.MessageBox.Show("Flags are saved. They are written into the client the next time you launch.", AppInfo.Name);
+        System.Windows.MessageBox.Show(
+            "Flags are saved into the Aisaka ClientSettings folder. Rejoin the game for them to take effect.",
+            AppInfo.Name);
     }
 
     private void Write(bool presetsOnly)
@@ -75,5 +83,13 @@ public partial class FastFlagsPage : System.Windows.Controls.UserControl
         }
 
         App.Save();
+        try
+        {
+            FastFlagService.ApplyAll(s, App.State.Prop, ClientLocator.Find(s, App.State.Prop), log: true);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("FastFlags", ex);
+        }
     }
 }

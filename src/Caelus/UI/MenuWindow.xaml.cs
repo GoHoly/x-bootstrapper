@@ -55,6 +55,8 @@ public partial class MenuWindow : Window
 
     private void Launch(LaunchMode mode)
     {
+        if (PageHost.Content is FastFlagsPage flags)
+            flags.Flush();
         App.Save();
         if (App.Settings.Prop.ConfirmLaunches &&
             System.Windows.MessageBox.Show($"Launch Aisaka {(mode == LaunchMode.Studio ? "Studio" : "Player")}?", AppInfo.Name, MessageBoxButton.YesNo) != MessageBoxResult.Yes)

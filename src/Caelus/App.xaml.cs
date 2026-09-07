@@ -50,7 +50,21 @@ public partial class App : System.Windows.Application
             Settings.Save();
         }
 
+        if (FastFlagService.MigratePresets(Settings.Prop))
+            Settings.Save();
+
         ThemeService.Apply(Settings.Prop.Theme);
+
+        try
+        {
+            var client = ClientLocator.Find(Settings.Prop, State.Prop);
+            if (client is not null)
+                FastFlagService.ApplyAll(Settings.Prop, State.Prop, client, log: true);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("FastFlags", ex);
+        }
 
         if (File.Exists(Paths.Executable))
         {
@@ -62,8 +76,8 @@ public partial class App : System.Windows.Application
         {
             try
             {
-                if (!File.Exists(Paths.Executable))
-                    InstallerService.CopyPayload(Environment.ProcessPath!, Paths.Executable);
+                if (!string.IsNullOrWhiteSpace(Environment.ProcessPath))
+                    InstallerService.CopyPayload(Environment.ProcessPath, Paths.Executable);
                 InstallerService.EnsureInstallCasing();
                 InstallerService.StripLegacyBinaries(Paths.Base);
                 InstallerService.StripLegacyBinaries(Paths.LegacyBase);

@@ -12,10 +12,12 @@ public static class FastFlagService
         "DFIntTaskSchedulerTargetFps",
         "FFlagDebugGraphicsPreferD3D11",
         "FFlagDebugGraphicsPreferD3D11FL10",
+        "FFlagDebugGraphicsPreferD3D11FL11",
         "FFlagDebugGraphicsDisableDirect3D11",
         "FFlagDebugGraphicsDisableD3D11",
         "FFlagDebugGraphicsPreferVulkan",
         "FFlagDebugGraphicsPreferOpenGL",
+        "FFlagDebugGraphicsPreferD3D9",
         "FFlagDisablePostFx",
         "DFFlagTextureQualityOverrideEnabled",
         "DFIntTextureQualityOverride"
@@ -33,30 +35,19 @@ public static class FastFlagService
         switch (settings.RenderingMode)
         {
             case RenderingMode.Direct3D11:
-                flags["FFlagDebugGraphicsPreferD3D11"] = "True";
-                flags["FFlagDebugGraphicsPreferD3D11FL10"] = "True";
-                flags["FFlagDebugGraphicsDisableDirect3D11"] = "False";
-                flags["FFlagDebugGraphicsDisableD3D11"] = "False";
-                flags["FFlagDebugGraphicsPreferVulkan"] = "False";
-                flags["FFlagDebugGraphicsPreferOpenGL"] = "False";
+                SetRendererPreference(flags, d3d11: true);
                 break;
             case RenderingMode.Vulkan:
-                flags["FFlagDebugGraphicsPreferVulkan"] = "True";
-                flags["FFlagDebugGraphicsPreferD3D11"] = "False";
-                flags["FFlagDebugGraphicsPreferD3D11FL10"] = "False";
-                flags["FFlagDebugGraphicsDisableDirect3D11"] = "True";
-                flags["FFlagDebugGraphicsDisableD3D11"] = "True";
-                flags["FFlagDebugGraphicsPreferOpenGL"] = "False";
+                SetRendererPreference(flags, vulkan: true);
                 break;
             case RenderingMode.OpenGL:
-                flags["FFlagDebugGraphicsPreferOpenGL"] = "True";
-                flags["FFlagDebugGraphicsPreferD3D11"] = "False";
-                flags["FFlagDebugGraphicsPreferD3D11FL10"] = "False";
-                flags["FFlagDebugGraphicsDisableDirect3D11"] = "True";
-                flags["FFlagDebugGraphicsDisableD3D11"] = "True";
-                flags["FFlagDebugGraphicsPreferVulkan"] = "False";
+                SetRendererPreference(flags, openGl: true);
                 break;
         }
+
+        // Never disable D3D11. That is what forced OpenGL/Vulkan on 2021 clients and broke shadows.
+        flags.Remove("FFlagDebugGraphicsDisableDirect3D11");
+        flags.Remove("FFlagDebugGraphicsDisableD3D11");
 
         if (settings.DisablePostFx)
             flags["FFlagDisablePostFx"] = "True";
@@ -68,6 +59,20 @@ public static class FastFlagService
         }
 
         return flags;
+    }
+
+    public const int CurrentPresetRevision = 2;
+
+    public static bool MigratePresets(Settings settings)
+    {
+        if (settings.FlagPresetRevision >= CurrentPresetRevision)
+            return false;
+
+        if (settings.RenderingMode is RenderingMode.OpenGL or RenderingMode.Vulkan)
+            settings.RenderingMode = RenderingMode.Direct3D11;
+
+        settings.FlagPresetRevision = CurrentPresetRevision;
+        return true;
     }
 
     public static void ApplyAll(Settings settings, AppState state, ClientInstall? primary, bool log = true)
@@ -95,18 +100,33 @@ public static class FastFlagService
             Logger.Write("FastFlags", $"Wrote {flags.Count} flag(s) to {written} ClientAppSettings.json file(s) under {install.VersionDirectory}");
     }
 
+    private static void SetRendererPreference(Dictionary<string, string> flags, bool d3d11 = false, bool vulkan = false, bool openGl = false)
+    {
+        flags["FFlagDebugGraphicsPreferD3D11"] = d3d11 ? "True" : "False";
+        flags["FFlagDebugGraphicsPreferD3D11FL10"] = "False";
+        flags["FFlagDebugGraphicsPreferD3D11FL11"] = "False";
+        flags["FFlagDebugGraphicsPreferVulkan"] = vulkan ? "True" : "False";
+        flags["FFlagDebugGraphicsPreferOpenGL"] = openGl ? "True" : "False";
+        flags["FFlagDebugGraphicsPreferD3D9"] = "False";
+    }
+
     private static IEnumerable<string> SettingFiles(ClientInstall install)
     {
         yield return Path.Combine(install.VersionDirectory, "ClientSettings", "ClientAppSettings.json");
 
         if (!string.IsNullOrWhiteSpace(install.Root) &&
             !string.Equals(install.Root, install.VersionDirectory, StringComparison.OrdinalIgnoreCase))
+        {
             yield return Path.Combine(install.Root, "ClientSettings", "ClientAppSettings.json");
+            yield return Path.Combine(install.Root, "Versions", "ClientSettings", "ClientAppSettings.json");
+        }
 
         var exeDir = Path.GetDirectoryName(install.PlayerExecutable);
         if (!string.IsNullOrWhiteSpace(exeDir) &&
             !string.Equals(exeDir, install.VersionDirectory, StringComparison.OrdinalIgnoreCase))
             yield return Path.Combine(exeDir, "ClientSettings", "ClientAppSettings.json");
+
+        yield return Path.Combine(Paths.LocalAppData, "Aisaka", "ClientSettings", "ClientAppSettings.json");
     }
 
     private static void WriteFile(string path, Dictionary<string, string> flags)
@@ -139,7 +159,7 @@ public static class FastFlagService
         foreach (var (key, value) in flags)
             root[key] = JsonValue.Create(ToFlagString(value));
 
-        File.WriteAllText(path, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+        File.WriteAllText(path, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
     }
 
     private static string ToFlagString(string value)

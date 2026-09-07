@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel>
         <TextBlock Text="Fast Flags" Style="{StaticResource PageTitle}"/>
-        <TextBlock Text="Presets apply as soon as you change them. Custom flags still need Save, or they save when you leave this page."
+        <TextBlock Text="Presets are written into Aisaka ClientSettings as soon as you change them. Rejoin the game for them to apply. Aisaka can ignore some flags; the file still updates."
                    Style="{StaticResource PageSubtitle}"/>
 
         <Border Style="{StaticResource Card}">
@@ -25,6 +25,8 @@
                     <ComboBoxItem Content="Vulkan"/>
                     <ComboBoxItem Content="OpenGL"/>
                 </ComboBox>
+                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0" FontSize="12"
+                           Text="Direct3D 11 is the working renderer on this 2021 client. OpenGL and Vulkan used to disable D3D11, which is what broke shadows. Those modes now only set a preference and will not turn Direct3D off."/>
                 <TextBlock Text="Texture quality" Style="{StaticResource FieldLabel}" Margin="0,12,0,6"/>
                 <ComboBox x:Name="TextureBox">
                     <ComboBoxItem Content="Default"/>

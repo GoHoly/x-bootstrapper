@@ -60,7 +60,7 @@ public sealed class BootstrapperService
                 "X Bootstrapper could not find an Aisaka client.\n\n" +
                 "Install the official Aisaka launcher once, or set a client folder / setup URL in Install settings.");
 
-        ApplyOverrides(install, log: true);
+        ApplyOverrides(install, log: true, mods: true);
 
         if (_settings.RegisterWebsiteProtocol)
             ProtocolService.Register(_settings);
@@ -79,6 +79,12 @@ public sealed class BootstrapperService
 
     private async Task<Process> LaunchAsync(ClientInstall install, ProtocolPayload? payload, CancellationToken token)
     {
+        if (!string.IsNullOrWhiteSpace(_args.ProtocolUri) && ClientLocator.IsPlayerExe(install.PlayerExecutable))
+        {
+            Logger.Write("Bootstrapper", "Starting AisakaPlayer with the join URI.");
+            return StartProcess(install.PlayerExecutable, start => start.ArgumentList.Add(_args.ProtocolUri!));
+        }
+
         if (!string.IsNullOrWhiteSpace(_args.ProtocolUri) && File.Exists(install.LauncherExecutable))
         {
             Logger.Write("Bootstrapper", "Handing the join URI to AisakaLauncher.");
@@ -87,7 +93,7 @@ public sealed class BootstrapperService
             return player ?? launcher;
         }
 
-        if (payload is { CanStartPlayer: true })
+        if (payload is { CanStartPlayer: true } && ClientLocator.IsPlayerExe(install.PlayerExecutable))
         {
             return StartProcess(install.PlayerExecutable, start =>
             {
@@ -105,56 +111,35 @@ public sealed class BootstrapperService
 
     private async Task<Process?> WaitForPlayerAsync(CancellationToken token)
     {
-        string? lastVersion = null;
-
         for (var i = 0; i < 300; i++)
         {
             token.ThrowIfCancellationRequested();
+            FastFlagService.ApplyAll(_settings, _state, ClientLocator.Find(_settings, _state), log: false);
 
-            var current = ClientLocator.Find(_settings, _state);
-            if (current is not null)
-            {
-                if (!string.Equals(current.VersionDirectory, lastVersion, StringComparison.OrdinalIgnoreCase))
-                {
-                    lastVersion = current.VersionDirectory;
-                    SetStatus("Applying modifications...");
-                    ApplyOverrides(current, log: true);
-                }
-                else
-                {
-                    ApplyOverrides(current, log: false);
-                }
-            }
-
-            var player = Process.GetProcessesByName("AisakaPlayer").FirstOrDefault();
+            var player = ClientLocator.FindRunningPlayer();
             if (player is not null)
             {
                 Logger.Write("Bootstrapper", $"AisakaPlayer is running ({player.Id})");
-                for (var extra = 0; extra < 15; extra++)
-                {
-                    var target = ClientLocator.FromPlayerProcess(player) ?? ClientLocator.Find(_settings, _state);
-                    if (target is not null)
-                        ApplyOverrides(target, log: extra == 0);
-
-                    await Task.Delay(50, token);
-                }
-
+                var target = ClientLocator.FromPlayerProcess(player) ?? ClientLocator.Find(_settings, _state);
+                if (target is not null)
+                    FastFlagService.ApplyAll(_settings, _state, target, log: true);
                 return player;
             }
 
-            await Task.Delay(100, token);
+            await Task.Delay(50, token);
         }
 
         Logger.Write("Bootstrapper", "AisakaPlayer did not appear after AisakaLauncher started.");
         return null;
     }
 
-    private void ApplyOverrides(ClientInstall install, bool log)
+    private void ApplyOverrides(ClientInstall install, bool log, bool mods)
     {
         try
         {
             FastFlagService.ApplyAll(_settings, _state, install, log);
-            ModService.Apply(install, log);
+            if (mods)
+                ModService.Apply(install, log);
         }
         catch (Exception ex)
         {

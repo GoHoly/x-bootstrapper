@@ -57,10 +57,38 @@ public static class ClientLocator
 
     public static ClientInstall? Find(Settings settings, AppState state)
     {
+        ClientInstall? best = null;
+        var bestWrite = DateTime.MinValue;
+
+        foreach (var root in CandidateRoots(settings).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            foreach (var install in FindPlayersInRoot(root))
+            {
+                DateTime write;
+                try
+                {
+                    write = Directory.GetLastWriteTimeUtc(install.VersionDirectory);
+                }
+                catch
+                {
+                    write = DateTime.MinValue;
+                }
+
+                if (best is null || write > bestWrite)
+                {
+                    best = install;
+                    bestWrite = write;
+                }
+            }
+        }
+
+        if (best is not null)
+            return best;
+
         foreach (var root in CandidateRoots(settings).Distinct(StringComparer.OrdinalIgnoreCase))
         {
             var found = FindInRoot(root);
-            if (found is not null)
+            if (found is not null && IsPlayerExe(found.PlayerExecutable))
                 return found;
         }
 
@@ -79,6 +107,13 @@ public static class ClientLocator
             };
         }
 
+        foreach (var root in CandidateRoots(settings).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var found = FindInRoot(root);
+            if (found is not null)
+                return found;
+        }
+
         return null;
     }
 
@@ -92,10 +127,26 @@ public static class ClientLocator
             foreach (var install in FindPlayersInRoot(root))
                 yield return install;
         }
+    }
 
-        var fromState = Find(settings, state);
-        if (fromState is not null)
-            yield return fromState;
+    public static bool IsPlayerExe(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+        var name = Path.GetFileName(path);
+        return PlayerNames.Any(player => player.Equals(name, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public static Process? FindRunningPlayer()
+    {
+        foreach (var name in new[] { "AisakaPlayer", "AisakaPlayerBeta", "RobloxPlayerBeta", "RobloxPlayer", "CaelusPlayerBeta" })
+        {
+            var process = Process.GetProcessesByName(name).FirstOrDefault();
+            if (process is not null)
+                return process;
+        }
+
+        return null;
     }
 
     private static IEnumerable<ClientInstall> FindPlayersInRoot(string root)
