@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using Caelus.Core;
 using Caelus.Models;
 using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
@@ -20,7 +21,8 @@ public partial class IntegrationsPage : System.Windows.Controls.UserControl
         InitializeComponent();
         var s = App.Settings.Prop;
         DiscordBox.IsChecked = s.DiscordRichPresence;
-        DiscordIdBox.Text = s.DiscordClientId;
+        // The built-in ID is shown as an empty box ("use the default").
+        DiscordIdBox.Text = s.DiscordClientId?.Trim() == AppInfo.DiscordClientId ? "" : s.DiscordClientId;
         ActivityBox.IsChecked = s.ActivityTracking;
         DiscordBox.Checked += (_, _) => Write();
         DiscordBox.Unchecked += (_, _) => Write();

@@ -341,33 +341,62 @@ public partial class App : System.Windows.Application
             _ = StartPresenceAsync(session);
     }
 
+    private static readonly TimeSpan PresenceRetry = TimeSpan.FromSeconds(20);
+    private const int PresenceMaxFailures = 15;
+
+    /// <summary>
+    /// Keeps Rich Presence up for the session: connects (READY handshake), sets the activity, and
+    /// reconnects if Discord starts later or restarts. Gives up after repeated failures.
+    /// </summary>
     private static async Task StartPresenceAsync(GameSession session)
     {
-        try
+        var clientId = Settings.Prop.EffectiveDiscordClientId;
+        if (!clientId.All(char.IsDigit))
         {
-            var s = Settings.Prop;
-            var discord = await Task.Run(() => DiscordService.ConnectAsync(s.DiscordClientId));
-            if (discord is null)
-                return;
+            Logger.Write("Discord", "The custom Discord application ID is not a number; Rich Presence is off for this session.");
+            return;
+        }
 
-            if (!ReferenceEquals(Session, session))
+        var failures = 0;
+        while (ReferenceEquals(Session, session) && failures < PresenceMaxFailures)
+        {
+            try
             {
-                discord.Dispose();
-                return;
+                if (Discord is not { Connected: true })
+                {
+                    Discord?.Dispose();
+                    Discord = null;
+                    var discord = await Task.Run(() => DiscordService.ConnectAsync(clientId));
+                    if (discord is null)
+                    {
+                        failures++;
+                    }
+                    else if (!ReferenceEquals(Session, session))
+                    {
+                        discord.Dispose();
+                        return;
+                    }
+                    else
+                    {
+                        failures = 0;
+                        Discord = discord;
+                        var s = Settings.Prop;
+                        // With activity tracking off, the place is never shared.
+                        var place = s.ActivityTracking ? session.PlaceId : null;
+                        discord.SetPresence(
+                            session.IsStudio ? "Building in Octane Studio" : "Playing on Octane",
+                            place is null ? (session.IsStudio ? "Octane Studio" : "In game") : $"Place {place}",
+                            session.Started);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                failures++;
+                Logger.Write("Discord", $"Rich Presence failed: {ex.Message}");
             }
 
-            Discord?.Dispose();
-            Discord = discord;
-            // With activity tracking off, the place is never shared.
-            var place = s.ActivityTracking ? session.PlaceId : null;
-            discord.SetPresence(
-                session.IsStudio ? "Building in Octane Studio" : "Playing Octane",
-                place is null ? null : $"Place {place}",
-                session.Started);
-        }
-        catch (Exception ex)
-        {
-            Logger.Write("Discord", $"Rich Presence failed: {ex.Message}");
+            await Task.Delay(PresenceRetry);
         }
     }
 

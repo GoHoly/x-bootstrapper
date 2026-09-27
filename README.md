@@ -30,12 +30,11 @@ X Bootstrapper checks GitHub Releases for this repository when you open it. It i
 
 ## Discord Rich Presence
 
-Discord only shows presence for a registered Discord application, and X Bootstrapper does not ship one. To use it:
+Rich Presence is on by default and works without any setup. While a game you started through X Bootstrapper is open (and the Discord desktop app is running), your profile shows **X BootStrapper For Octane** with "Playing on Octane", the Octane artwork, and how long you've been playing. X Bootstrapper talks to Discord only over the local IPC pipe, and it reconnects if you start Discord after the game.
 
-1. Create an application at <https://discord.com/developers/applications>. Its name is what your profile shows ("Playing ...").
-2. Copy its **Application ID** and paste it into **Integrations → Discord application ID**.
-
-With the field empty, X Bootstrapper doesn't contact Discord at all. With **Activity tracking** off, the place ID is not shown in presence or written to the logs.
+- Turn it off under **Integrations → Discord Rich Presence**.
+- With **Activity tracking** off, the place ID is not shown in presence or written to the logs.
+- **Custom application ID (optional):** leave the field empty to use the built-in application. To use your own, create one at <https://discord.com/developers/applications>, paste its Application ID into **Integrations**, and upload a Rich Presence art asset named `octane` if you want the image.
 
 ## Build
 

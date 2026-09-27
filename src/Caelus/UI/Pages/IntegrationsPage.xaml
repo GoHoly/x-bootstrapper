@@ -10,8 +10,10 @@
             <StackPanel>
                 <CheckBox x:Name="DiscordBox" Content="Discord Rich Presence"/>
                 <TextBlock Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,10" FontSize="12"
-                           Text="Shows &quot;Playing Octane&quot; on your Discord profile while the game is open. Discord needs an application ID for this: create an application at discord.com/developers/applications (its name is what Discord shows) and paste its Application ID here. With no ID, nothing is sent."/>
-                <TextBlock Text="Discord application ID" Style="{StaticResource FieldLabel}"/>
+                           Text="Shows &quot;Playing on Octane&quot; with the time played on your Discord profile while a game started through X Bootstrapper is open. Discord must be running on this PC. Works out of the box with the built-in X Bootstrapper application."/>
+                <TextBlock Text="Custom Discord application ID (optional)" Style="{StaticResource FieldLabel}"/>
+                <TextBlock Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,6" FontSize="12"
+                           Text="Leave empty to use the built-in application. If you use your own (discord.com/developers/applications), upload a Rich Presence art asset named &quot;octane&quot; to it for the image."/>
                 <TextBox x:Name="DiscordIdBox"/>
                 <CheckBox x:Name="ActivityBox" Content="Activity tracking: show the place ID in Rich Presence and write it to logs" Margin="0,10,0,0"/>
             </StackPanel>

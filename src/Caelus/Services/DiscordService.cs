@@ -6,8 +6,8 @@ using Caelus.Core;
 namespace Caelus.Services;
 
 /// <summary>
-/// Minimal Discord Rich Presence client over the local IPC pipe. It needs a Discord application
-/// ID (from https://discord.com/developers/applications); with no ID nothing is attempted.
+/// Minimal Discord Rich Presence client over the local IPC pipe. Uses the built-in X Bootstrapper
+/// application ID (AppInfo.DiscordClientId) unless a custom one is set.
 /// Presence is only sent after Discord answers the handshake with READY.
 /// </summary>
 public sealed class DiscordService : IDisposable
@@ -154,6 +154,11 @@ public sealed class DiscordService : IDisposable
         {
             ["details"] = details,
             ["timestamps"] = new Dictionary<string, object> { ["start"] = started.ToUnixTimeSeconds() },
+            ["assets"] = new Dictionary<string, object>
+            {
+                ["large_image"] = AppInfo.DiscordLargeImage,
+                ["large_text"] = AppInfo.DiscordLargeText
+            },
             ["instance"] = false
         };
         if (!string.IsNullOrWhiteSpace(state))

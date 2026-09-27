@@ -1,3 +1,4 @@
+using Caelus.Core;
 using System.Text.Json.Serialization;
 
 namespace Caelus.Models;
@@ -44,7 +45,12 @@ public sealed class Settings
     public bool RegisterWebsiteProtocol { get; set; } = true;
 
     public bool DiscordRichPresence { get; set; } = true;
+    // Optional override. Empty or whitespace means the built-in X Bootstrapper application (AppInfo.DiscordClientId).
     public string DiscordClientId { get; set; } = "";
+
+    [JsonIgnore]
+    public string EffectiveDiscordClientId =>
+        string.IsNullOrWhiteSpace(DiscordClientId) ? AppInfo.DiscordClientId : DiscordClientId.Trim();
     public bool ActivityTracking { get; set; } = true;
 
     public int FramerateLimit { get; set; } = 0;
