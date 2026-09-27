@@ -38,16 +38,15 @@
                     </Border>
                     <TextBlock Text="Remove X Bootstrapper" FontSize="20" FontWeight="SemiBold" Margin="0,12,0,0" TextWrapping="Wrap"/>
                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,10,0,0" LineHeight="20"
-                               Text="This removes the launcher, shortcuts, and protocol handlers from this account."/>
+                               Text="This removes X Bootstrapper, its shortcuts, and its link handlers from this account. Website links go back to the official Octane launcher."/>
                 </StackPanel>
             </Border>
 
             <StackPanel Grid.Row="1" Grid.Column="1" Margin="28">
                 <TextBlock Text="Uninstall" FontWeight="SemiBold" FontSize="16"/>
                 <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,16" LineHeight="20"
-                           Text="Leave the boxes unchecked to keep mods, settings, and the Octane client. Tick them to wipe this install completely."/>
-                <CheckBox x:Name="ClientBox" Content="Also delete downloaded Octane client files"/>
-                <CheckBox x:Name="DataBox" Content="Uninstall all contents (mods, presets, settings, and logs)"/>
+                           Text="The Octane client in %LOCALAPPDATA%\Octane is never deleted. Files your mods replaced in it are restored to the originals first."/>
+                <CheckBox x:Name="DataBox" Content="Also delete my mods, profiles, settings, and logs"/>
                 <StackPanel Orientation="Horizontal" Margin="0,28,0,0">
                     <Button Content="Uninstall" Style="{StaticResource AccentButton}" Background="{DynamicResource DangerBrush}" Click="Uninstall_Click"/>
                     <Button Content="Cancel" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="Cancel_Click"/>

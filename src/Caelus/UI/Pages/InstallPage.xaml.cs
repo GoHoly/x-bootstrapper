@@ -20,10 +20,6 @@ public partial class InstallPage : UserControl
         InitializeComponent();
         var s = App.Settings.Prop;
         ClientBox.Text = s.ClientDirectory;
-        WebsiteBox.Text = s.WebsiteUrl;
-        SetupBox.Text = s.SetupBaseUrl;
-        ManifestBox.Text = s.ManifestUrl;
-        ChannelBox.Text = s.Channel;
         WebsiteProtocolBox.IsChecked = s.RegisterWebsiteProtocol;
         RobloxProtocolBox.IsChecked = s.RegisterRobloxProtocol;
         AppUpdatesBox.IsChecked = s.CheckForAppUpdates;
@@ -263,10 +259,6 @@ public partial class InstallPage : UserControl
     {
         var s = App.Settings.Prop;
         s.ClientDirectory = ClientBox.Text.Trim();
-        s.WebsiteUrl = WebsiteBox.Text.Trim();
-        s.SetupBaseUrl = SetupBox.Text.Trim();
-        s.ManifestUrl = ManifestBox.Text.Trim();
-        s.Channel = ChannelBox.Text.Trim();
         s.RegisterWebsiteProtocol = WebsiteProtocolBox.IsChecked == true;
         s.RegisterRobloxProtocol = RobloxProtocolBox.IsChecked == true;
         s.CheckForAppUpdates = AppUpdatesBox.IsChecked == true;

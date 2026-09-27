@@ -8,12 +8,9 @@ public partial class BehaviourPage : System.Windows.Controls.UserControl
     {
         InitializeComponent();
         var s = App.Settings.Prop;
-        UpdatesBox.IsChecked = s.CheckForClientUpdates;
         AppUpdatesBox.IsChecked = s.CheckForAppUpdates;
         ConfirmBox.IsChecked = s.ConfirmLaunches;
         StayBox.IsChecked = s.StayOpenAfterLaunch;
-        UpdatesBox.Checked += (_, _) => Write();
-        UpdatesBox.Unchecked += (_, _) => Write();
         AppUpdatesBox.Checked += (_, _) => Write();
         AppUpdatesBox.Unchecked += (_, _) => Write();
         ConfirmBox.Checked += (_, _) => Write();
@@ -25,7 +22,6 @@ public partial class BehaviourPage : System.Windows.Controls.UserControl
     private void Write()
     {
         var s = App.Settings.Prop;
-        s.CheckForClientUpdates = UpdatesBox.IsChecked == true;
         s.CheckForAppUpdates = AppUpdatesBox.IsChecked == true;
         s.ConfirmLaunches = ConfirmBox.IsChecked == true;
         s.StayOpenAfterLaunch = StayBox.IsChecked == true;

@@ -22,7 +22,6 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
   <ItemGroup>
-    <Resource Include="Assets\caelus.png" />
     <Resource Include="Assets\caelus.ico" />
     <Resource Include="Assets\x-mark.png" />
     <Resource Include="Assets\x-banner.png" />

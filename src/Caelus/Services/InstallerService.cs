@@ -73,7 +73,12 @@ public static class InstallerService
         Native.NotifyShell();
     }
 
-    public static void Uninstall(Settings settings, bool removeClient, bool removeData = false)
+    /// <summary>
+    /// Removes X Bootstrapper from this account. The Octane client (%LOCALAPPDATA%\Octane) is never
+    /// deleted; files our mods replaced in it are put back first. <paramref name="removeData"/> also
+    /// deletes settings, mods, profiles, and logs from the install folder.
+    /// </summary>
+    public static void Uninstall(Settings settings, AppState state, bool removeData = false)
     {
         try
         {
@@ -84,14 +89,23 @@ public static class InstallerService
             Logger.Error("Installer", ex);
         }
 
-        ProtocolService.Unregister();
+        ProtocolService.Unregister(state);
         ShortcutService.RemoveAll();
         WindowsAppRegistration.Unregister();
 
-        if (removeClient || removeData)
+        // Versions/Downloads were created (empty) by 2.0.x; remove them when they are still empty.
+        foreach (var leftover in new[] { "Versions", "Downloads" })
         {
-            TryDeleteDirectory(Path.Combine(Paths.Base, "Versions"));
-            TryDeleteDirectory(Path.Combine(Paths.Base, "Downloads"));
+            try
+            {
+                var dir = Path.Combine(Paths.Base, leftover);
+                if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any())
+                    Directory.Delete(dir);
+            }
+            catch
+            {
+                /* ignore */
+            }
         }
 
         settings.Installed = false;

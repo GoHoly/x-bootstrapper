@@ -12,8 +12,6 @@ public partial class UninstallWindow : Window
         Closed += (_, _) => App.RequestExitIfIdle();
         PlayfulMotion.Attach(this, SparkleLayer);
         DataBox.IsChecked = removeAllContents;
-        if (removeAllContents)
-            ClientBox.IsChecked = true;
     }
 
     private void Uninstall_Click(object sender, RoutedEventArgs e)
@@ -22,10 +20,7 @@ public partial class UninstallWindow : Window
         {
             StatusText.Text = "Removing X Bootstrapper...";
             var removeData = DataBox.IsChecked == true;
-            InstallerService.Uninstall(
-                App.Settings.Prop,
-                removeClient: ClientBox.IsChecked == true || removeData,
-                removeData: removeData);
+            InstallerService.Uninstall(App.Settings.Prop, App.State.Prop, removeData: removeData);
             if (removeData)
                 App.SuppressSave = true;
             else

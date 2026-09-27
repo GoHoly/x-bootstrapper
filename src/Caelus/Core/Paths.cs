@@ -14,8 +14,6 @@ public static class Paths
     public static string PreviousBase { get; } = Path.Combine(LocalAppData, AppInfo.PreviousFolderName);
 
     public static string Base { get; private set; } = DefaultBase;
-    public static string Versions => Path.Combine(Base, "Versions");
-    public static string Downloads => Path.Combine(Base, "Downloads");
     public static string Logs => Path.Combine(Base, "Logs");
     public static string Modifications => Path.Combine(Base, "Modifications");
     public static string ModBackups => Path.Combine(Base, "ModBackups");
@@ -32,8 +30,6 @@ public static class Paths
         StartMenu = Path.Combine(StartMenuRoot, AppInfo.Name);
 
         Directory.CreateDirectory(Base);
-        Directory.CreateDirectory(Versions);
-        Directory.CreateDirectory(Downloads);
         Directory.CreateDirectory(Logs);
         Directory.CreateDirectory(Modifications);
     }

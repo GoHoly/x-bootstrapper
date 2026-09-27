@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel>
         <TextBlock Text="Install" Style="{StaticResource PageTitle}"/>
-        <TextBlock Text="Where X Bootstrapper lives, client paths, and which launcher version you want."
+        <TextBlock Text="Launcher versions, where your Octane client is, and website links."
                    Style="{StaticResource PageSubtitle}"/>
 
         <Border x:Name="UpdateBanner" Style="{StaticResource Card}" Visibility="Collapsed">
@@ -32,28 +32,12 @@
         <Border Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="Client folder" FontWeight="SemiBold"/>
-                <TextBlock Text="Leave empty to auto-detect. Point this at a Versions folder if you already have the 2021 client."
+                <TextBlock Text="Leave empty to auto-detect the official install (%LOCALAPPDATA%\Octane). Otherwise pick an Octane folder, its clients folder, or a clients\&lt;year&gt; folder."
                            Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,10" FontSize="12"/>
                 <DockPanel>
                     <Button DockPanel.Dock="Right" Content="Browse" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="BrowseClient_Click"/>
                     <TextBox x:Name="ClientBox"/>
                 </DockPanel>
-            </StackPanel>
-        </Border>
-
-        <Border Style="{StaticResource Card}">
-            <StackPanel>
-                <TextBlock Text="Deployment" FontWeight="SemiBold"/>
-                <TextBlock Text="X Bootstrapper asks Octane for a version manifest, then downloads if one exists."
-                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,12" FontSize="12"/>
-                <TextBlock Text="Website" Style="{StaticResource FieldLabel}"/>
-                <TextBox x:Name="WebsiteBox"/>
-                <TextBlock Text="Setup CDN" Style="{StaticResource FieldLabel}" Margin="0,12,0,6"/>
-                <TextBox x:Name="SetupBox"/>
-                <TextBlock Text="Manifest URL" Style="{StaticResource FieldLabel}" Margin="0,12,0,6"/>
-                <TextBox x:Name="ManifestBox"/>
-                <TextBlock Text="Channel" Style="{StaticResource FieldLabel}" Margin="0,12,0,6"/>
-                <TextBox x:Name="ChannelBox"/>
             </StackPanel>
         </Border>
 
@@ -72,9 +56,9 @@
         <Border Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="Uninstall" FontWeight="SemiBold"/>
-                <TextBlock Text="Opens the uninstaller. Shortcuts, protocols, and X Bootstrapper are removed if you confirm."
+                <TextBlock Text="Opens the uninstaller. X Bootstrapper, its shortcuts, and link handlers are removed if you confirm. The Octane client itself is never deleted; files mods replaced are restored."
                            Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,8" FontSize="12"/>
-                <CheckBox x:Name="WipeBox" Content="Uninstall all contents (mods, presets, settings, logs, client files)"/>
+                <CheckBox x:Name="WipeBox" Content="Also delete my mods, profiles, settings, and logs"/>
                 <Button Content="Uninstall X Bootstrapper" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,10,0,0" Click="Uninstall_Click"/>
             </StackPanel>
         </Border>

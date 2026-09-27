@@ -31,30 +31,6 @@ public sealed class BootstrapperService
 
         // File-system work runs off the UI thread so the launch window stays responsive.
         var install = await Task.Run(() => ClientLocator.Find(_settings, _state), token);
-        var payload = ProtocolPayload.TryParse(_args.ProtocolUri);
-
-        if (_settings.CheckForClientUpdates && payload is null)
-        {
-            var version = await DeploymentService.QueryAsync(_settings, SetStatus, token);
-            if (version is not null)
-            {
-                var needsInstall = install is null ||
-                    !string.Equals(install.VersionGuid, version.VersionGuid, StringComparison.OrdinalIgnoreCase);
-
-                if (needsInstall)
-                {
-                    var progress = new Progress<double>(value => SetProgress(value, false));
-                    var downloaded = await DeploymentService.InstallAsync(_settings, version, progress, SetStatus, token);
-                    if (downloaded is not null)
-                        install = downloaded;
-                }
-                else
-                {
-                    SetStatus("Octane is up to date.");
-                }
-            }
-        }
-
         if (install is null)
             throw new InvalidOperationException(
                 "X Bootstrapper could not find an Octane client.\n\n" +

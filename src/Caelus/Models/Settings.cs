@@ -31,20 +31,12 @@ public sealed class Settings
 {
     public bool Installed { get; set; }
     public string InstallLocation { get; set; } = "";
-    public string WebsiteUrl { get; set; } = "https://octane.wtf";
-    // Launcher self-update only. Client presence is local (state\INSTALLED-<year>), not a CDN feed.
-    public string SetupBaseUrl { get; set; } = "https://octane.wtf/setup/launcher";
-    // Left blank: https://octane.wtf/version.txt is the login page HTML, not a version feed.
-    public string ManifestUrl { get; set; } = "";
     public string ClientDirectory { get; set; } = "";
-    public string Channel { get; set; } = "live";
 
     public AppTheme Theme { get; set; } = AppTheme.Dark;
     public BootstrapperStyle BootstrapperStyle { get; set; } = BootstrapperStyle.Fluent;
     public bool UiSounds { get; set; } = true;
 
-    // Official Octane install owns the client; X Bootstrapper finds it locally.
-    public bool CheckForClientUpdates { get; set; } = false;
     public bool CheckForAppUpdates { get; set; } = true;
     public string GitHubRepository { get; set; } = "";
     public bool ConfirmLaunches { get; set; }
@@ -73,7 +65,6 @@ public sealed class Settings
 public sealed class AppState
 {
     public string? PlayerVersionGuid { get; set; }
-    public string? StudioVersionGuid { get; set; }
     public string? PlayerExecutable { get; set; }
     public string? StudioExecutable { get; set; }
     public DateTime? LastLaunched { get; set; }

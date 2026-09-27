@@ -93,15 +93,11 @@ public partial class App : System.Windows.Application
         Paths.Initialize(InstallerService.PrepareInstallDirectory());
         try { Environment.CurrentDirectory = Paths.Base; } catch { /* keep the process cwd if Windows refuses */ }
         Logger.Initialize();
-        Logger.Write("App", $"Args: {string.Join(' ', e.Args.Select(RedactArg))}");
-
         Settings = new JsonStore<Settings>(Paths.Settings);
         State = new JsonStore<AppState>(Paths.State);
         Settings.Load();
         State.Load();
-
-        if (MigrateAisakaSettings(Settings.Prop))
-            Settings.Save();
+        Logger.Write("App", $"Args: {string.Join(' ', e.Args.Select(RedactArg))}");
 
         if (!string.IsNullOrWhiteSpace(Settings.Prop.InstallLocation) &&
             !Paths.IsLegacyDefault(Settings.Prop.InstallLocation) &&
@@ -165,7 +161,7 @@ public partial class App : System.Windows.Application
         {
             if (Args.Quiet)
             {
-                InstallerService.Uninstall(Settings.Prop, removeClient: false);
+                InstallerService.Uninstall(Settings.Prop, State.Prop);
                 Settings.Save();
                 Shutdown();
                 return;
@@ -222,6 +218,10 @@ public partial class App : System.Windows.Application
         if (!LaunchArgs.IsProtocol(arg))
             return arg;
 
+        // With activity tracking off, the log doesn't record which game was joined.
+        if (Settings?.Prop.ActivityTracking != true)
+            return "[protocol]";
+
         var parsed = ProtocolPayload.TryParse(arg);
         return parsed?.PlaceLauncherUrl is null
             ? "[protocol]"
@@ -234,46 +234,6 @@ public partial class App : System.Windows.Application
         State.Save();
     }
 
-
-    /// <summary>
-    /// Old installs left WebsiteUrl/SetupBaseUrl/ManifestUrl pointing at aisaka.me.
-    /// Rewrite them to Octane once so the bootstrapper status no longer says setup.aisaka.me.
-    /// </summary>
-    private static bool MigrateAisakaSettings(Settings settings)
-    {
-        var changed = false;
-
-        static bool IsLegacyRevivalHost(string? url) =>
-            !string.IsNullOrWhiteSpace(url) &&
-            url.Contains("aisaka", StringComparison.OrdinalIgnoreCase);
-
-        if (IsLegacyRevivalHost(settings.WebsiteUrl) || string.IsNullOrWhiteSpace(settings.WebsiteUrl))
-        {
-            settings.WebsiteUrl = "https://octane.wtf";
-            changed = true;
-        }
-
-        if (IsLegacyRevivalHost(settings.SetupBaseUrl) || string.IsNullOrWhiteSpace(settings.SetupBaseUrl))
-        {
-            settings.SetupBaseUrl = "https://octane.wtf/setup/launcher";
-            changed = true;
-        }
-
-        if (IsLegacyRevivalHost(settings.ManifestUrl))
-        {
-            settings.ManifestUrl = "";
-            changed = true;
-        }
-
-        // Official Octane owns the client; local state\INSTALLED-* is the source of truth.
-        if (settings.CheckForClientUpdates)
-        {
-            settings.CheckForClientUpdates = false;
-            changed = true;
-        }
-
-        return changed;
-    }
 
     public static void LaunchOctane(LaunchMode mode = LaunchMode.Player)
     {
