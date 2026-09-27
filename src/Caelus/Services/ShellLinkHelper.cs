@@ -13,7 +13,9 @@ internal static class ShellLinkHelper
         var link = (IShellLinkW)new ShellLink();
         try
         {
-            ((IPersistFile)link).Load(shortcutPath, 0);
+            // STGM_READWRITE: loading read-only (0) makes IPropertyStore.Commit fail with STG_E_ACCESSDENIED.
+            const int StgmReadWrite = 0x00000002;
+            ((IPersistFile)link).Load(shortcutPath, StgmReadWrite);
             var store = (IPropertyStore)link;
             var value = PropVariant.FromString(aumid);
             try
