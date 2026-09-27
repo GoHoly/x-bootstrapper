@@ -331,17 +331,43 @@ public partial class App : System.Windows.Application
                 EndSession();
         };
 
-        if (Settings.Prop.DiscordRichPresence && !string.IsNullOrWhiteSpace(Settings.Prop.DiscordClientId))
+        var s = Settings.Prop;
+        if (s.ShowTrayIcon)
+            TrayService.Show(session.IsStudio ? "Octane Studio is open" : "Octane is running");
+
+        IntegrationService.Start(s.Integrations);
+
+        if (s.DiscordRichPresence)
+            _ = StartPresenceAsync(session);
+    }
+
+    private static async Task StartPresenceAsync(GameSession session)
+    {
+        try
         {
-            Discord = new DiscordService();
-            if (Discord.Connect(Settings.Prop.DiscordClientId))
+            var s = Settings.Prop;
+            var discord = await Task.Run(() => DiscordService.ConnectAsync(s.DiscordClientId));
+            if (discord is null)
+                return;
+
+            if (!ReferenceEquals(Session, session))
             {
-                var place = Settings.Prop.ActivityTracking ? session.PlaceId : null;
-                Discord.SetPresence(
-                    session.IsStudio ? "Building in Octane Studio" : place is null ? "Playing Octane" : $"Place {place}",
-                    "2021 revival",
-                    place);
+                discord.Dispose();
+                return;
             }
+
+            Discord?.Dispose();
+            Discord = discord;
+            // With activity tracking off, the place is never shared.
+            var place = s.ActivityTracking ? session.PlaceId : null;
+            discord.SetPresence(
+                session.IsStudio ? "Building in Octane Studio" : "Playing Octane",
+                place is null ? null : $"Place {place}",
+                session.Started);
+        }
+        catch (Exception ex)
+        {
+            Logger.Write("Discord", $"Rich Presence failed: {ex.Message}");
         }
     }
 
@@ -351,15 +377,36 @@ public partial class App : System.Windows.Application
         Session = null;
         Discord?.Dispose();
         Discord = null;
+        if (session is not null)
+        {
+            IntegrationService.StopAll();
+            TrayService.Hide();
+        }
+
         session?.Dispose();
         if (session is not null)
             RequestExitIfIdle();
     }
 
+    /// <summary>Tray "Exit": stop waiting for the game and quit (the game itself keeps running).</summary>
+    public static void ExitFromTray()
+    {
+        EndSession();
+        Current?.Shutdown();
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
-        Session?.Dispose();
-        Discord?.Dispose();
+        try
+        {
+            EndSession();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("App", ex);
+        }
+
+        TrayService.Hide();
         NotifyService.Dispose();
         if (!SuppressSave)
             Save();

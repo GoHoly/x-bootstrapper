@@ -22,6 +22,42 @@
 
         <Border Style="{StaticResource Card}">
             <StackPanel>
+                <TextBlock Text="Profiles" FontWeight="SemiBold"/>
+                <TextBlock Text="Save your current mods under a name and switch between sets. Loading a profile first saves what you had as &quot;Before last load&quot;."
+                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,12" FontSize="12"/>
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Delete" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="DeleteProfile_Click"/>
+                    <Button DockPanel.Dock="Right" Content="Load" Style="{StaticResource AccentButton}" Margin="8,0,0,0" Click="LoadProfile_Click"/>
+                    <ComboBox x:Name="ProfileBox"/>
+                </DockPanel>
+                <DockPanel Margin="0,10,0,0">
+                    <Button DockPanel.Dock="Right" Content="Save current mods" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="SaveProfile_Click"/>
+                    <TextBox x:Name="ProfileNameBox"/>
+                </DockPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Applied to your client" FontWeight="SemiBold"/>
+                <TextBlock x:Name="AppliedSummary" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,8" FontSize="12"/>
+                <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Background="{DynamicResource InputBrush}">
+                    <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                        <TextBlock x:Name="AppliedList" FontFamily="Consolas" FontSize="11" Margin="8,6"/>
+                    </ScrollViewer>
+                </Border>
+                <WrapPanel Margin="0,10,0,0">
+                    <Button Content="Refresh" Style="{StaticResource GhostButton}" Click="RefreshApplied_Click"/>
+                    <Button Content="Restore original files" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="RestoreOriginals_Click"/>
+                    <Button Content="Remove all mods" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="RemoveAll_Click"/>
+                </WrapPanel>
+                <TextBlock Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,0" FontSize="12"
+                           Text="Restore original files puts the client's own files back now; your mods stay in the list and are applied again at the next launch. Remove all mods also clears the list (saved as &quot;Before last load&quot; first). Close the game before using these."/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
                 <TextBlock Text="Single files" FontWeight="SemiBold" Margin="0,0,0,12"/>
                 <StackPanel x:Name="SlotsPanel"/>
             </StackPanel>

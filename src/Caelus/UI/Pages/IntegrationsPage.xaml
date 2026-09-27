@@ -3,16 +3,28 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel>
         <TextBlock Text="Integrations" Style="{StaticResource PageTitle}"/>
-        <TextBlock Text="Optional extras that sit on top of the Octane client."
+        <TextBlock Text="Optional extras that run alongside the Octane client."
                    Style="{StaticResource PageSubtitle}"/>
 
         <Border Style="{StaticResource Card}">
             <StackPanel>
                 <CheckBox x:Name="DiscordBox" Content="Discord Rich Presence"/>
-                <TextBlock Text="Paste a Discord application client ID. X Bootstrapper talks to Discord locally over IPC."
-                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,10" FontSize="12"/>
+                <TextBlock Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,10" FontSize="12"
+                           Text="Shows &quot;Playing Octane&quot; on your Discord profile while the game is open. Discord needs an application ID for this: create an application at discord.com/developers/applications (its name is what Discord shows) and paste its Application ID here. With no ID, nothing is sent."/>
+                <TextBlock Text="Discord application ID" Style="{StaticResource FieldLabel}"/>
                 <TextBox x:Name="DiscordIdBox"/>
-                <CheckBox x:Name="ActivityBox" Content="Track the launched place ID" Margin="0,8,0,0"/>
+                <CheckBox x:Name="ActivityBox" Content="Activity tracking: show the place ID in Rich Presence and write it to logs" Margin="0,10,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource Card}">
+            <StackPanel>
+                <TextBlock Text="Launch with the game" FontWeight="SemiBold"/>
+                <TextBlock Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,12" FontSize="12"
+                           Text="Programs here start when Octane starts through X Bootstrapper. Tick &quot;Close with game&quot; to close them again when the game exits (only the process X Bootstrapper started is closed)."/>
+                <StackPanel x:Name="IntegrationRows"/>
+                <TextBlock x:Name="EmptyText" Text="No programs yet." Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,0,0,8"/>
+                <Button Content="Add program" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Click="Add_Click"/>
             </StackPanel>
         </Border>
     </StackPanel>

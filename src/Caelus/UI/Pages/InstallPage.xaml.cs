@@ -175,10 +175,11 @@ public partial class InstallPage : UserControl
         SetVersionButtonsEnabled(false);
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-            var started = await AppUpdateService.InstallAsync(release, App.Args, cts.Token);
-            if (!started)
-                VersionsStatus.Text = $"{release.Version} has no Setup.exe, or the download failed.";
+            // The update window shows progress, lets you cancel, and verifies the SHA-256.
+            var started = await UpdateWindow.RunAsync(release, App.Args);
+            VersionsStatus.Text = started
+                ? $"Installing {release.Version}…"
+                : $"{release.Version} was not installed.";
         }
         catch (Exception ex)
         {

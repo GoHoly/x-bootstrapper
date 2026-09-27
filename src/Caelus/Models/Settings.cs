@@ -56,9 +56,24 @@ public sealed class Settings
     public int FlagPresetRevision { get; set; }
 
     public Dictionary<string, string> FastFlags { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    // Saved sets of custom flags (name -> flags), managed on the Fast Flags page.
+    public Dictionary<string, Dictionary<string, string>> FastFlagProfiles { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    // Programs started with the game and optionally closed when it exits.
+    public List<Integration> Integrations { get; set; } = new();
+    public bool ShowTrayIcon { get; set; } = true;
 
     [JsonIgnore]
     public bool HasCustomClient => !string.IsNullOrWhiteSpace(ClientDirectory);
+}
+
+public sealed class Integration
+{
+    public string Name { get; set; } = "";
+    public string Path { get; set; } = "";
+    public string Arguments { get; set; } = "";
+    public bool Enabled { get; set; } = true;
+    public bool AutoClose { get; set; } = true;
 }
 
 public sealed class AppState

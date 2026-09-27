@@ -11,6 +11,9 @@ public partial class BehaviourPage : System.Windows.Controls.UserControl
         AppUpdatesBox.IsChecked = s.CheckForAppUpdates;
         ConfirmBox.IsChecked = s.ConfirmLaunches;
         StayBox.IsChecked = s.StayOpenAfterLaunch;
+        TrayBox.IsChecked = s.ShowTrayIcon;
+        TrayBox.Checked += (_, _) => Write();
+        TrayBox.Unchecked += (_, _) => Write();
         AppUpdatesBox.Checked += (_, _) => Write();
         AppUpdatesBox.Unchecked += (_, _) => Write();
         ConfirmBox.Checked += (_, _) => Write();
@@ -25,6 +28,7 @@ public partial class BehaviourPage : System.Windows.Controls.UserControl
         s.CheckForAppUpdates = AppUpdatesBox.IsChecked == true;
         s.ConfirmLaunches = ConfirmBox.IsChecked == true;
         s.StayOpenAfterLaunch = StayBox.IsChecked == true;
+        s.ShowTrayIcon = TrayBox.IsChecked == true;
         App.Save();
     }
 }

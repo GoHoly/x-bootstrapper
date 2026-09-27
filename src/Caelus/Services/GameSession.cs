@@ -16,6 +16,7 @@ public sealed class GameSession : IDisposable
     public Process Process { get; }
     public string? PlaceId { get; }
     public bool IsStudio { get; }
+    public DateTimeOffset Started { get; } = DateTimeOffset.UtcNow;
 
     public event Action? Ended;
 

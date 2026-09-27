@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -49,8 +50,15 @@ internal static class AppUpdateService
             using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
                 latest = await FindAutoUpdateAsync(cts.Token);
 
-            if (latest is not null)
-                await InstallAsync(latest, args, CancellationToken.None);
+            if (latest is null)
+                return;
+
+            // Never restart in the middle of a launch or while a game session is running:
+            // wait until X Bootstrapper is idle. If the process exits first, the next start updates.
+            while (!IsIdleForUpdate())
+                await Task.Delay(TimeSpan.FromSeconds(15));
+
+            await UI.UpdateWindow.RunAsync(latest, args);
         }
         catch (Exception ex)
         {
@@ -72,6 +80,14 @@ internal static class AppUpdateService
             return null;
 
         return latest;
+    }
+
+    private static bool IsIdleForUpdate()
+    {
+        if (App.Session is not null)
+            return false;
+        var app = System.Windows.Application.Current;
+        return app is null || !app.Windows.OfType<UI.BootstrapperWindow>().Any(window => window.IsVisible);
     }
 
     public static AppRelease? LatestStable(IEnumerable<AppRelease> releases) =>
@@ -117,14 +133,16 @@ internal static class AppUpdateService
                 DateTimeOffset.TryParse(publishedEl.GetString(), out var parsed))
                 published = parsed;
 
+            var (setupUrl, setupSha256) = FindSetup(item);
             list.Add(new AppRelease(
                 version,
                 tag,
                 item.TryGetProperty("name", out var nameEl) ? nameEl.GetString() ?? version : version,
                 item.TryGetProperty("body", out var bodyEl) ? bodyEl.GetString() ?? "" : "",
-                FindSetupUrl(item),
+                setupUrl,
                 published,
-                item.TryGetProperty("prerelease", out var pre) && pre.ValueKind == JsonValueKind.True));
+                item.TryGetProperty("prerelease", out var pre) && pre.ValueKind == JsonValueKind.True,
+                setupSha256));
         }
 
         _cache = list;
@@ -132,7 +150,8 @@ internal static class AppUpdateService
         return list;
     }
 
-    public static async Task<bool> InstallAsync(AppRelease release, LaunchArgs args, CancellationToken token)
+    public static async Task<bool> InstallAsync(AppRelease release, LaunchArgs args, CancellationToken token,
+        IProgress<DownloadProgress>? progress = null)
     {
         if (string.IsNullOrWhiteSpace(release.SetupUrl))
         {
@@ -149,7 +168,23 @@ internal static class AppUpdateService
             var setup = Path.Combine(Path.GetTempPath(), $"X Bootstrapper Setup {release.Version}.exe");
             try
             {
-                await DownloadAsync(release.SetupUrl, setup, token);
+                var hash = await DownloadAsync(release.SetupUrl, setup, token, progress);
+                if (string.IsNullOrWhiteSpace(release.SetupSha256))
+                {
+                    Logger.Write("Update", $"GitHub gave no SHA-256 digest for {release.Version}; size check only.");
+                }
+                else if (!string.Equals(hash, release.SetupSha256, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidDataException(
+                        $"The downloaded setup does not match GitHub's SHA-256 checksum for {release.Version}, so it was deleted. Try again later.");
+                }
+                else
+                {
+                    Logger.Write("Update", $"SHA-256 verified ({hash}).");
+                }
+
+                progress?.Report(new DownloadProgress(1, 1, "Verified. Starting the installer…"));
+                token.ThrowIfCancellationRequested();
             }
             catch
             {
@@ -178,7 +213,9 @@ internal static class AppUpdateService
         }
     }
 
-    private static async Task DownloadAsync(string url, string destination, CancellationToken token)
+    /// <summary>Downloads to <paramref name="destination"/> and returns the file's SHA-256 (lowercase hex).</summary>
+    private static async Task<string> DownloadAsync(string url, string destination, CancellationToken token,
+        IProgress<DownloadProgress>? progress)
     {
         using var stall = CancellationTokenSource.CreateLinkedTokenSource(token);
         stall.CancelAfter(StallTimeout);
@@ -190,18 +227,32 @@ internal static class AppUpdateService
 
             await using var input = await response.Content.ReadAsStreamAsync(stall.Token);
             await using var output = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true);
+            using var sha = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             var buffer = new byte[81920];
             long read = 0;
             int count;
+            var lastReport = DateTime.MinValue;
+            progress?.Report(new DownloadProgress(0, total, "Downloading…"));
             while ((count = await input.ReadAsync(buffer, stall.Token)) > 0)
             {
                 stall.CancelAfter(StallTimeout);
                 await output.WriteAsync(buffer.AsMemory(0, count), stall.Token);
+                sha.AppendData(buffer, 0, count);
                 read += count;
+                if (progress is not null && DateTime.UtcNow - lastReport > TimeSpan.FromMilliseconds(150))
+                {
+                    lastReport = DateTime.UtcNow;
+                    progress.Report(new DownloadProgress(read, total, total is long size && size > 0
+                        ? $"Downloading… {read / 1048576.0:0.0} of {size / 1048576.0:0.0} MB"
+                        : $"Downloading… {read / 1048576.0:0.0} MB"));
+                }
             }
 
             if (total is long expected && read != expected)
                 throw new IOException($"The download ended early ({read} of {expected} bytes).");
+
+            progress?.Report(new DownloadProgress(read, total, "Checking the download…"));
+            return Convert.ToHexString(sha.GetHashAndReset()).ToLowerInvariant();
         }
         catch (OperationCanceledException) when (!token.IsCancellationRequested)
         {
@@ -275,10 +326,11 @@ internal static class AppUpdateService
         App.Save();
     }
 
-    private static string? FindSetupUrl(JsonElement release)
+    /// <summary>Setup asset URL and its SHA-256 from GitHub's "digest" field ("sha256:&lt;hex&gt;").</summary>
+    private static (string? Url, string? Sha256) FindSetup(JsonElement release)
     {
         if (!release.TryGetProperty("assets", out var assets) || assets.ValueKind != JsonValueKind.Array)
-            return null;
+            return (null, null);
 
         foreach (var asset in assets.EnumerateArray())
         {
@@ -286,10 +338,19 @@ internal static class AppUpdateService
             if (!name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
                 name.IndexOf("setup", StringComparison.OrdinalIgnoreCase) < 0)
                 continue;
-            return asset.GetProperty("browser_download_url").GetString();
+
+            string? sha = null;
+            if (asset.TryGetProperty("digest", out var digestEl) && digestEl.ValueKind == JsonValueKind.String)
+            {
+                var digest = digestEl.GetString() ?? "";
+                if (digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
+                    sha = digest["sha256:".Length..].Trim().ToLowerInvariant();
+            }
+
+            return (asset.GetProperty("browser_download_url").GetString(), sha);
         }
 
-        return null;
+        return (null, null);
     }
 
     private static void RestartThroughInstaller(string setupPath, LaunchArgs args)
@@ -342,4 +403,7 @@ internal sealed record AppRelease(
     string Notes,
     string? SetupUrl,
     DateTimeOffset? Published,
-    bool Prerelease);
+    bool Prerelease,
+    string? SetupSha256 = null);
+
+internal readonly record struct DownloadProgress(long Read, long? Total, string Status);

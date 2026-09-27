@@ -11,6 +11,7 @@
                 <CheckBox x:Name="AppUpdatesBox" Content="Auto-update X Bootstrapper from GitHub (or pick a version in Install)"/>
                 <CheckBox x:Name="ConfirmBox" Content="Ask before launching"/>
                 <CheckBox x:Name="StayBox" Content="Keep X Bootstrapper open after the client starts"/>
+                <CheckBox x:Name="TrayBox" Content="Show a tray icon while the game is running (Open settings, Open logs, Exit)"/>
             </StackPanel>
         </Border>
     </StackPanel>
