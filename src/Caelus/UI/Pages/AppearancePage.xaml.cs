@@ -16,6 +16,9 @@ public partial class AppearancePage : System.Windows.Controls.UserControl
             App.Settings.Prop.BootstrapperStyle = StyleBox.SelectedIndex == 1 ? BootstrapperStyle.Classic : BootstrapperStyle.Fluent;
             App.Save();
         };
+        ClassicStyleBox.IsChecked = App.Settings.Prop.UiStyle == UiStyle.Classic;
+        ClassicStyleBox.Checked += (_, _) => SetStyle(UiStyle.Classic);
+        ClassicStyleBox.Unchecked += (_, _) => SetStyle(UiStyle.Modern);
         SoundsBox.IsChecked = App.Settings.Prop.UiSounds;
         SoundsBox.Checked += (_, _) => { App.Settings.Prop.UiSounds = true; App.Save(); };
         SoundsBox.Unchecked += (_, _) => { App.Settings.Prop.UiSounds = false; App.Save(); };
@@ -102,7 +105,7 @@ public partial class AppearancePage : System.Windows.Controls.UserControl
             Width = 168,
             Margin = new Thickness(0, 0, 10, 10),
             Padding = new Thickness(8),
-            CornerRadius = new CornerRadius(4),
+            CornerRadius = new CornerRadius(ThemeService.IsModern ? 10 : 4),
             BorderThickness = new Thickness(selected ? 2 : 1),
             BorderBrush = new SolidColorBrush(selected ? palette.Accent : palette.Border),
             Background = new SolidColorBrush(palette.Card),
@@ -113,7 +116,7 @@ public partial class AppearancePage : System.Windows.Controls.UserControl
         var preview = new Border
         {
             Height = 52,
-            CornerRadius = new CornerRadius(2),
+            CornerRadius = new CornerRadius(ThemeService.IsModern ? 6 : 2),
             Background = new SolidColorBrush(palette.Background),
             ClipToBounds = true
         };
@@ -158,6 +161,18 @@ public partial class AppearancePage : System.Windows.Controls.UserControl
         if (bindClick)
             card.MouseLeftButtonUp += (_, _) => Select(palette.Id);
         return card;
+    }
+
+    private static void SetStyle(UiStyle style)
+    {
+        if (App.Settings.Prop.UiStyle == style && ThemeService.Style == style)
+            return;
+
+        App.Settings.Prop.UiStyle = style;
+        App.Save();
+        // The menu rebuilds the current page (this one) once the style dictionary is swapped.
+        ThemeService.Apply(App.Settings.Prop.Theme, style);
+        UiSound.PlayTheme();
     }
 
     private void Select(AppTheme theme)

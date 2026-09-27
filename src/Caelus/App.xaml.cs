@@ -76,7 +76,7 @@ public partial class App : System.Windows.Application
         if (app is null)
             return;
 
-        if (UiShots.Active)
+        if (UiShots.Active && !UiShots.AllowExit)
             return;
 
         app.Dispatcher.BeginInvoke(() =>
@@ -116,7 +116,7 @@ public partial class App : System.Windows.Application
         if (FastFlagService.MigratePresets(Settings.Prop))
             Settings.Save();
 
-        ThemeService.Apply(Settings.Prop.Theme);
+        ThemeService.Apply(Settings.Prop.Theme, Settings.Prop.UiStyle);
 
         // Developer screenshot mode (see UiShots): render the UI to PNGs and exit, nothing else runs.
         var shots = Array.FindIndex(e.Args, arg => arg.Equals("-uishots", StringComparison.OrdinalIgnoreCase));

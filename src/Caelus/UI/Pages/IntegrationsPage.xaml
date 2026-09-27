@@ -2,31 +2,31 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel>
-        <TextBlock Text="Integrations" Style="{StaticResource PageTitle}"/>
+        <TextBlock Text="Integrations" Style="{DynamicResource PageTitle}"/>
         <TextBlock Text="Optional extras that run alongside the Octane client."
-                   Style="{StaticResource PageSubtitle}"/>
+                   Style="{DynamicResource PageSubtitle}"/>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
                 <CheckBox x:Name="DiscordBox" Content="Discord Rich Presence"/>
-                <TextBlock Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,10" FontSize="12"
+                <TextBlock Style="{DynamicResource CardText}" Margin="0,4,0,10"
                            Text="Shows &quot;Playing on Octane&quot; with the time played on your Discord profile while a game started through X Bootstrapper is open. Discord must be running on this PC. Works out of the box with the built-in X Bootstrapper application."/>
-                <TextBlock Text="Custom Discord application ID (optional)" Style="{StaticResource FieldLabel}"/>
-                <TextBlock Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,6" FontSize="12"
+                <TextBlock Text="Custom Discord application ID (optional)" Style="{DynamicResource FieldLabel}"/>
+                <TextBlock Style="{DynamicResource CardText}" Margin="0,0,0,6"
                            Text="Leave empty to use the built-in application. If you use your own (discord.com/developers/applications), upload a Rich Presence art asset named &quot;octane&quot; to it for the image."/>
                 <TextBox x:Name="DiscordIdBox"/>
                 <CheckBox x:Name="ActivityBox" Content="Activity tracking: show the place ID in Rich Presence and write it to logs" Margin="0,10,0,0"/>
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="Launch with the game" FontWeight="SemiBold"/>
-                <TextBlock Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,12" FontSize="12"
+                <TextBlock Text="Launch with the game" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Style="{DynamicResource CardText}" Margin="0,4,0,12"
                            Text="Programs here start when Octane starts through X Bootstrapper. Tick &quot;Close with game&quot; to close them again when the game exits (only the process X Bootstrapper started is closed)."/>
                 <StackPanel x:Name="IntegrationRows"/>
-                <TextBlock x:Name="EmptyText" Text="No programs yet." Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,0,0,8"/>
-                <Button Content="Add program" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Click="Add_Click"/>
+                <TextBlock Style="{DynamicResource CardText}" x:Name="EmptyText" Text="No programs yet." Margin="0,0,0,8"/>
+                <Button Content="Add program" Style="{DynamicResource GhostButton}" HorizontalAlignment="Left" Click="Add_Click"/>
             </StackPanel>
         </Border>
     </StackPanel>

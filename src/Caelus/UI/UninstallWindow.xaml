@@ -12,7 +12,7 @@
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="36" GlassFrameThickness="0" ResizeBorderThickness="0"/>
     </WindowChrome.WindowChrome>
-    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Background="{DynamicResource BackgroundBrush}">
+    <Border Style="{DynamicResource WindowFrame}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="36"/>
@@ -23,15 +23,15 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Border Grid.ColumnSpan="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
+            <Border Style="{DynamicResource TitleBar}">
                 <Grid>
-                    <Border Height="2" VerticalAlignment="Top" Background="{DynamicResource AccentBrush}"/>
-                    <TextBlock Text="Uninstall X Bootstrapper" FontSize="12" Foreground="{DynamicResource MutedBrush}" Margin="14,0,0,0" VerticalAlignment="Center"/>
-                    <Button Content="✕" Style="{StaticResource CloseButton}" HorizontalAlignment="Right" Click="Cancel_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                    <Border Style="{DynamicResource AccentStripe}"/>
+                    <TextBlock Text="Uninstall X Bootstrapper" Style="{DynamicResource TitleCaption}"/>
+                    <Button Content="✕" Style="{DynamicResource CloseButton}" HorizontalAlignment="Right" Click="Cancel_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
                 </Grid>
             </Border>
 
-            <Border Grid.Row="1" Background="{DynamicResource SidebarBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0" Padding="28,32">
+            <Border Style="{DynamicResource SidePanel}">
                 <StackPanel>
                     <Border Width="200" Height="52" CornerRadius="8" Background="#0B0B0D" ClipToBounds="True" HorizontalAlignment="Left" Margin="0,0,0,4">
                         <Image Source="/Assets/x-banner.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
@@ -43,15 +43,15 @@
             </Border>
 
             <StackPanel Grid.Row="1" Grid.Column="1" Margin="28">
-                <TextBlock Text="Uninstall" FontWeight="SemiBold" FontSize="16"/>
+                <TextBlock Text="Uninstall" Style="{DynamicResource CardTitle}" FontSize="16"/>
                 <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,16" LineHeight="20"
                            Text="The Octane client in %LOCALAPPDATA%\Octane is never deleted. Files your mods replaced in it are restored to the originals first."/>
                 <CheckBox x:Name="DataBox" Content="Also delete my mods, profiles, settings, and logs"/>
                 <StackPanel Orientation="Horizontal" Margin="0,28,0,0">
-                    <Button Content="Uninstall" Style="{StaticResource AccentButton}" Background="{DynamicResource DangerBrush}" Click="Uninstall_Click"/>
-                    <Button Content="Cancel" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="Cancel_Click"/>
+                    <Button Content="Uninstall" Style="{DynamicResource DangerButton}" Click="Uninstall_Click"/>
+                    <Button Content="Cancel" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="Cancel_Click"/>
                 </StackPanel>
-                <TextBlock x:Name="StatusText" Margin="0,14,0,0" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" FontSize="12"/>
+                <TextBlock Style="{DynamicResource CardText}" x:Name="StatusText" Margin="0,14,0,0"/>
             </StackPanel>
             <Canvas x:Name="SparkleLayer"
                     Grid.RowSpan="2" Grid.ColumnSpan="2"

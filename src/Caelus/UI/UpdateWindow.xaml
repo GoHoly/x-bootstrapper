@@ -14,10 +14,10 @@
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="28" GlassFrameThickness="0" ResizeBorderThickness="0"/>
     </WindowChrome.WindowChrome>
-    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Background="{DynamicResource BackgroundBrush}">
+    <Border Style="{DynamicResource WindowFrame}">
         <Grid>
-            <Border Height="2" VerticalAlignment="Top" Background="{DynamicResource AccentBrush}"/>
-            <Grid Margin="20,16,20,16">
+            <Border Style="{DynamicResource AccentStripe}"/>
+            <Grid Style="{DynamicResource DialogBody}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
@@ -26,7 +26,7 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Orientation="Horizontal">
-                    <Border Width="36" Height="36" CornerRadius="8" Background="#0B0B0D" ClipToBounds="True">
+                    <Border Style="{DynamicResource LogoMark}">
                         <Image Source="/Assets/x-mark.png" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
                     </Border>
                     <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
@@ -37,7 +37,7 @@
 
                 <TextBlock x:Name="StatusText" Grid.Row="1" Text="Connecting…" VerticalAlignment="Center" FontSize="13" TextWrapping="Wrap"/>
                 <ProgressBar x:Name="Progress" Grid.Row="2" IsIndeterminate="True" Minimum="0" Maximum="100" Margin="0,2,0,12"/>
-                <Button x:Name="CancelButton" Content="Cancel" Style="{StaticResource GhostButton}" HorizontalAlignment="Right" Grid.Row="3" Click="Cancel_Click"/>
+                <Button x:Name="CancelButton" Content="Cancel" Style="{DynamicResource GhostButton}" HorizontalAlignment="Right" Grid.Row="3" Click="Cancel_Click"/>
             </Grid>
         </Grid>
     </Border>

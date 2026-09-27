@@ -20,17 +20,36 @@ internal static class UiShots
 {
     public static bool Active { get; private set; }
 
+    /// <summary>Set for the last step, which checks that closing the menu ends the process by itself.</summary>
+    public static bool AllowExit { get; private set; }
+
     private static string _dir = "";
+    private static AppTheme _theme;
+    private static UiStyle _style;
+
+    // In-memory only (saving is off in this mode), so the Appearance page shows the right selection.
+    private static void UseTheme(AppTheme theme, UiStyle style)
+    {
+        App.Settings.Prop.Theme = theme;
+        App.Settings.Prop.UiStyle = style;
+        ThemeService.Apply(theme, style);
+    }
 
     public static async Task RunAsync(string dir)
     {
         Active = true;
         App.SuppressSave = true;
+        _theme = App.Settings.Prop.Theme;
+        _style = App.Settings.Prop.UiStyle;
         _dir = dir;
         Directory.CreateDirectory(dir);
         try
         {
-            await CaptureAllAsync(App.Settings.Prop.Theme, "");
+            var theme = _theme;
+            await CaptureAllAsync(theme, UiStyle.Modern, "-modern");
+            await CaptureAllAsync(theme, UiStyle.Classic, "-classic");
+            if (theme != AppTheme.Dark)
+                await CaptureAllAsync(AppTheme.Dark, UiStyle.Modern, "-modern-midnight");
             await CaptureThemesAsync();
         }
         catch (Exception ex)
@@ -40,16 +59,38 @@ internal static class UiShots
         }
         finally
         {
-            Application.Current.Shutdown();
+            await CheckMenuExitAsync(dir);
         }
+    }
+
+    private static async Task CheckMenuExitAsync(string dir)
+    {
+        AllowExit = true;
+        try
+        {
+            var menu = new MenuWindow();
+            Offscreen(menu);
+            menu.Show();
+            await Settle(800);
+            menu.Close();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("UiShots", ex);
+        }
+
+        // Closing the last window should shut the app down on its own; this only runs if it did not.
+        await Task.Delay(5000);
+        File.WriteAllText(Path.Combine(dir, "exit.txt"), "Closing the menu did not end the process; forced shutdown.");
+        Application.Current.Shutdown();
     }
 
     private static readonly string[] NavNames =
         { "NavMods", "NavFlags", "NavAppearance", "NavBehaviour", "NavIntegrations", "NavInstall", "NavAbout" };
 
-    private static async Task CaptureAllAsync(AppTheme theme, string suffix)
+    private static async Task CaptureAllAsync(AppTheme theme, UiStyle style, string suffix)
     {
-        ThemeService.Apply(theme);
+        UseTheme(theme, style);
         var menu = new MenuWindow();
         Offscreen(menu);
         menu.Show();
@@ -83,18 +124,25 @@ internal static class UiShots
         Offscreen(menu);
         menu.Show();
         await Settle(900);
-        foreach (var palette in ThemeService.All)
+        foreach (var style in new[] { UiStyle.Modern, UiStyle.Classic })
         {
-            ThemeService.Apply(palette.Id);
-            ((RadioButton)menu.FindName("NavAbout")).IsChecked = true;
-            await Settle(200);
-            ((RadioButton)menu.FindName("NavMods")).IsChecked = true;
-            await Settle(900);
-            SaveWindow(menu, $"theme-{palette.Id.ToString().ToLowerInvariant()}-menu.png");
+            foreach (var id in Enum.GetValues<AppTheme>())
+            {
+                UseTheme(id, style);
+                ((RadioButton)menu.FindName("NavAbout")).IsChecked = true;
+                await Settle(300);
+                ((RadioButton)menu.FindName("NavMods")).IsChecked = true;
+                await Settle(900);
+                var name = $"theme-{id.ToString().ToLowerInvariant()}-{style.ToString().ToLowerInvariant()}";
+                SaveWindow(menu, $"{name}-menu.png");
+                ((RadioButton)menu.FindName("NavAppearance")).IsChecked = true;
+                await Settle(900);
+                SaveWindow(menu, $"{name}-appearance.png");
+            }
         }
 
         menu.Close();
-        ThemeService.Apply(App.Settings.Prop.Theme);
+        UseTheme(_theme, _style);
     }
 
     private static async Task ShowAndSave(Window window, string file)

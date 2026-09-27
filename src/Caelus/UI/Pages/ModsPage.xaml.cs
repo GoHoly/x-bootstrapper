@@ -150,7 +150,8 @@ public partial class ModsPage : System.Windows.Controls.UserControl
         var choose = new System.Windows.Controls.Button
         {
             Content = installed ? "Replace" : "Choose file",
-            Style = (Style)FindResource("AccentButton"),
+            // Modern keeps the accent for page-level actions; a column of accent buttons is noise.
+            Style = (Style)FindResource(ThemeService.IsModern ? "GhostButton" : "AccentButton"),
             Tag = slot
         };
         choose.Click += ChooseSlot_Click;

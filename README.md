@@ -24,7 +24,7 @@ X Bootstrapper checks GitHub Releases for this repository when you open it. It i
 - FastFlags: renderer/FPS presets plus an editable flag table with JSON import/export and flag profiles
 - Launch with the game: start your own programs with Octane and optionally close them when it exits
 - Tray icon while a game is running (Open settings, Open logs, Exit)
-- Launcher themes
+- Launcher themes (Midnight, Octane, Dusk, Paper, Slate, xyxy light/dark), each in the new Modern style or the previous Classic style (Appearance → Classic style)
 - Windows notifications when a game is starting and when a new launcher version is out
 - Discord Rich Presence over local IPC (see below)
 

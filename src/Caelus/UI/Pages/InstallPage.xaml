@@ -2,63 +2,63 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel>
-        <TextBlock Text="Install" Style="{StaticResource PageTitle}"/>
+        <TextBlock Text="Install" Style="{DynamicResource PageTitle}"/>
         <TextBlock Text="Launcher versions, where your Octane client is, and website links."
-                   Style="{StaticResource PageSubtitle}"/>
+                   Style="{DynamicResource PageSubtitle}"/>
 
-        <Border x:Name="UpdateBanner" Style="{StaticResource Card}" Visibility="Collapsed">
+        <Border x:Name="UpdateBanner" Style="{DynamicResource Card}" Visibility="Collapsed">
             <StackPanel>
-                <TextBlock x:Name="UpdateBannerTitle" FontWeight="SemiBold" TextWrapping="Wrap"/>
-                <TextBlock x:Name="UpdateBannerBody" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,12" FontSize="12"/>
+                <TextBlock x:Name="UpdateBannerTitle" Style="{DynamicResource CardTitle}" TextWrapping="Wrap"/>
+                <TextBlock Style="{DynamicResource CardText}" x:Name="UpdateBannerBody" Margin="0,4,0,12"/>
                 <StackPanel Orientation="Horizontal">
-                    <Button x:Name="UpdateNowButton" Content="Update now" Style="{StaticResource AccentButton}" Click="UpdateNow_Click"/>
-                    <Button Content="Not now" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="SkipUpdate_Click"/>
+                    <Button x:Name="UpdateNowButton" Content="Update now" Style="{DynamicResource AccentButton}" Click="UpdateNow_Click"/>
+                    <Button Content="Not now" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="SkipUpdate_Click"/>
                 </StackPanel>
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="X Bootstrapper versions" FontWeight="SemiBold"/>
-                <TextBlock x:Name="CurrentVersionText" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,8" FontSize="12"/>
+                <TextBlock Text="X Bootstrapper versions" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Style="{DynamicResource CardText}" x:Name="CurrentVersionText" Margin="0,4,0,8"/>
                 <CheckBox x:Name="AppUpdatesBox" Content="Auto-update when a new GitHub release is published"/>
-                <TextBlock Text="Previous versions" FontWeight="SemiBold" Margin="0,16,0,6"/>
-                <TextBlock x:Name="VersionsStatus" Foreground="{DynamicResource MutedBrush}" FontSize="12" Margin="0,0,0,8" Text="Loading releases…"/>
+                <TextBlock Text="Previous versions" Style="{DynamicResource CardTitle}" Margin="0,16,0,6"/>
+                <TextBlock Style="{DynamicResource CardText}" x:Name="VersionsStatus" Margin="0,0,0,8" Text="Loading releases…"/>
                 <StackPanel x:Name="VersionList"/>
-                <Button Content="Refresh" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,10,0,0" Click="RefreshVersions_Click"/>
+                <Button Content="Refresh" Style="{DynamicResource GhostButton}" HorizontalAlignment="Left" Margin="0,10,0,0" Click="RefreshVersions_Click"/>
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="Client folder" FontWeight="SemiBold"/>
-                <TextBlock Text="Leave empty to auto-detect the official install (%LOCALAPPDATA%\Octane). Otherwise pick an Octane folder, its clients folder, or a clients\&lt;year&gt; folder."
-                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,10" FontSize="12"/>
+                <TextBlock Text="Client folder" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Style="{DynamicResource CardText}" Text="Leave empty to auto-detect the official install (%LOCALAPPDATA%\Octane). Otherwise pick an Octane folder, its clients folder, or a clients\&lt;year&gt; folder."
+                           Margin="0,4,0,10"/>
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="Browse" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="BrowseClient_Click"/>
+                    <Button DockPanel.Dock="Right" Content="Browse" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="BrowseClient_Click"/>
                     <TextBox x:Name="ClientBox"/>
                 </DockPanel>
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="Protocols" FontWeight="SemiBold"/>
+                <TextBlock Text="Protocols" Style="{DynamicResource CardTitle}"/>
                 <CheckBox x:Name="WebsiteProtocolBox" Content="Handle Play on octane.wtf (octane-player / octane-studio links)"/>
                 <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
-                    <Button Content="Re-register" Style="{StaticResource GhostButton}" Click="Register_Click"/>
-                    <Button Content="Save" Style="{StaticResource AccentButton}" Margin="8,0,0,0" Click="Save_Click"/>
+                    <Button Content="Re-register" Style="{DynamicResource GhostButton}" Click="Register_Click"/>
+                    <Button Content="Save" Style="{DynamicResource AccentButton}" Margin="8,0,0,0" Click="Save_Click"/>
                 </StackPanel>
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="Uninstall" FontWeight="SemiBold"/>
-                <TextBlock Text="Opens the uninstaller. X Bootstrapper, its shortcuts, and link handlers are removed if you confirm. The Octane client itself is never deleted; files mods replaced are restored."
-                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,8" FontSize="12"/>
+                <TextBlock Text="Uninstall" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Style="{DynamicResource CardText}" Text="Opens the uninstaller. X Bootstrapper, its shortcuts, and link handlers are removed if you confirm. The Octane client itself is never deleted; files mods replaced are restored."
+                           Margin="0,4,0,8"/>
                 <CheckBox x:Name="WipeBox" Content="Also delete my mods, profiles, settings, and logs"/>
-                <Button Content="Uninstall X Bootstrapper" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,10,0,0" Click="Uninstall_Click"/>
+                <Button Content="Uninstall X Bootstrapper" Style="{DynamicResource GhostButton}" HorizontalAlignment="Left" Margin="0,10,0,0" Click="Uninstall_Click"/>
             </StackPanel>
         </Border>
     </StackPanel>

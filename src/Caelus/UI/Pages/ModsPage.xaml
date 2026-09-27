@@ -2,63 +2,63 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel>
-        <TextBlock Text="Mods" Style="{StaticResource PageTitle}"/>
+        <TextBlock Text="Mods" Style="{DynamicResource PageTitle}"/>
         <TextBlock Text="Drop in a whole UI pack, or replace one file at a time. X Bootstrapper copies them onto the 2021 client when Octane starts."
-                   Style="{StaticResource PageSubtitle}"/>
+                   Style="{DynamicResource PageSubtitle}"/>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="Import a pack" FontWeight="SemiBold"/>
-                <TextBlock Text="Select the pack folder (the one that contains &quot;content&quot;, or the content folder itself), or a .zip of it."
-                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,12" FontSize="12"/>
+                <TextBlock Text="Import a pack" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Style="{DynamicResource CardText}" Text="Select the pack folder (the one that contains &quot;content&quot;, or the content folder itself), or a .zip of it."
+                           Margin="0,4,0,12"/>
                 <WrapPanel>
-                    <Button Content="Import folder" Style="{StaticResource AccentButton}" Click="ImportFolder_Click"/>
-                    <Button Content="Import zip" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="ImportZip_Click"/>
-                    <Button Content="Open folder" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="Open_Click"/>
+                    <Button Content="Import folder" Style="{DynamicResource AccentButton}" Click="ImportFolder_Click"/>
+                    <Button Content="Import zip" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="ImportZip_Click"/>
+                    <Button Content="Open folder" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="Open_Click"/>
                 </WrapPanel>
-                <TextBlock x:Name="StatusText" Margin="0,12,0,0" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" FontSize="12"/>
+                <TextBlock Style="{DynamicResource CardText}" x:Name="StatusText" Margin="0,12,0,0"/>
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="Profiles" FontWeight="SemiBold"/>
-                <TextBlock Text="Save your current mods under a name and switch between sets. Loading a profile first saves what you had as &quot;Before last load&quot;."
-                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,12" FontSize="12"/>
+                <TextBlock Text="Profiles" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Style="{DynamicResource CardText}" Text="Save your current mods under a name and switch between sets. Loading a profile first saves what you had as &quot;Before last load&quot;."
+                           Margin="0,4,0,12"/>
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="Delete" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="DeleteProfile_Click"/>
-                    <Button DockPanel.Dock="Right" Content="Load" Style="{StaticResource AccentButton}" Margin="8,0,0,0" Click="LoadProfile_Click"/>
+                    <Button DockPanel.Dock="Right" Content="Delete" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="DeleteProfile_Click"/>
+                    <Button DockPanel.Dock="Right" Content="Load" Style="{DynamicResource AccentButton}" Margin="8,0,0,0" Click="LoadProfile_Click"/>
                     <ComboBox x:Name="ProfileBox"/>
                 </DockPanel>
                 <DockPanel Margin="0,10,0,0">
-                    <Button DockPanel.Dock="Right" Content="Save current mods" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="SaveProfile_Click"/>
+                    <Button DockPanel.Dock="Right" Content="Save current mods" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="SaveProfile_Click"/>
                     <TextBox x:Name="ProfileNameBox"/>
                 </DockPanel>
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="Applied to your client" FontWeight="SemiBold"/>
-                <TextBlock x:Name="AppliedSummary" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,8" FontSize="12"/>
-                <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4" Background="{DynamicResource InputBrush}">
+                <TextBlock Text="Applied to your client" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Style="{DynamicResource CardText}" x:Name="AppliedSummary" Margin="0,4,0,8"/>
+                <Border Style="{DynamicResource InsetPanel}">
                     <ScrollViewer MaxHeight="160" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                         <TextBlock x:Name="AppliedList" FontFamily="Consolas" FontSize="11" Margin="8,6"/>
                     </ScrollViewer>
                 </Border>
                 <WrapPanel Margin="0,10,0,0">
-                    <Button Content="Refresh" Style="{StaticResource GhostButton}" Click="RefreshApplied_Click"/>
-                    <Button Content="Restore original files" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="RestoreOriginals_Click"/>
-                    <Button Content="Remove all mods" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="RemoveAll_Click"/>
+                    <Button Content="Refresh" Style="{DynamicResource GhostButton}" Click="RefreshApplied_Click"/>
+                    <Button Content="Restore original files" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="RestoreOriginals_Click"/>
+                    <Button Content="Remove all mods" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="RemoveAll_Click"/>
                 </WrapPanel>
-                <TextBlock Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,0" FontSize="12"
+                <TextBlock Style="{DynamicResource CardText}" Margin="0,8,0,0"
                            Text="Restore original files puts the client's own files back now; your mods stay in the list and are applied again at the next launch. Remove all mods also clears the list (saved as &quot;Before last load&quot; first). Close the game before using these."/>
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="Single files" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                <TextBlock Text="Single files" Style="{DynamicResource CardTitle}" Margin="0,0,0,12"/>
                 <StackPanel x:Name="SlotsPanel"/>
             </StackPanel>
         </Border>

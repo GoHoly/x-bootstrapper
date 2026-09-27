@@ -2,24 +2,27 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel>
-        <TextBlock Text="Appearance" Style="{StaticResource PageTitle}"/>
+        <TextBlock Text="Appearance" Style="{DynamicResource PageTitle}"/>
         <TextBlock Text="The launcher itself, not the 2021 client. Pick a skin and it applies immediately."
-                   Style="{StaticResource PageSubtitle}"/>
+                   Style="{DynamicResource PageSubtitle}"/>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="Theme" FontWeight="SemiBold"/>
-                <TextBlock Text="These only change X Bootstrapper. Octane keeps whatever you threw in Mods."
-                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,14" FontSize="12"/>
+                <TextBlock Text="Theme" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Style="{DynamicResource CardText}" Text="These only change X Bootstrapper. Octane keeps whatever you threw in Mods."
+                           Margin="0,4,0,14"/>
                 <WrapPanel x:Name="ThemePanel"/>
+                <CheckBox x:Name="ClassicStyleBox" Content="Classic style" Margin="0,4,0,0"/>
+                <TextBlock Style="{DynamicResource CardText}" Margin="0,2,0,0"
+                           Text="Brings back the previous X Bootstrapper look (before 2.2) for whichever theme you pick."/>
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="Launch window" FontWeight="SemiBold"/>
-                <TextBlock Text="The small dialog while Octane is starting."
-                           Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,10" FontSize="12"/>
+                <TextBlock Text="Launch window" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Style="{DynamicResource CardText}" Text="The small dialog while Octane is starting."
+                           Margin="0,4,0,10"/>
                 <ComboBox x:Name="StyleBox">
                     <ComboBoxItem Content="Match theme"/>
                     <ComboBoxItem Content="2013 gray"/>

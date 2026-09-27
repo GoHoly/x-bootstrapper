@@ -319,6 +319,8 @@ public partial class FastFlagsPage : System.Windows.Controls.UserControl
         }
 
         App.Save();
+        if (UiShots.Active)
+            return;
         try
         {
             FastFlagService.ApplyAll(s, App.State.Prop, ClientLocator.Find(s, App.State.Prop), log: true);

@@ -111,9 +111,7 @@ public partial class InstallPage : UserControl
         {
             Margin = new Thickness(0, 0, 0, 8),
             Padding = new Thickness(12, 10, 12, 10),
-            CornerRadius = new CornerRadius(4),
-            Background = (Brush)FindResource("InputBrush"),
-            BorderBrush = (Brush)FindResource("BorderBrush"),
+            Style = (Style)FindResource("InsetPanel"),
             BorderThickness = new Thickness(current ? 1.5 : 1)
         };
 
@@ -152,7 +150,10 @@ public partial class InstallPage : UserControl
         var action = new Button
         {
             Content = current ? "This PC" : newer ? "Update" : "Install",
-            Style = (Style)FindResource(current || string.IsNullOrWhiteSpace(release.SetupUrl) ? "GhostButton" : "AccentButton"),
+            // Modern keeps the accent for the one action that matters (a newer version).
+            Style = (Style)FindResource(current || string.IsNullOrWhiteSpace(release.SetupUrl) || (ThemeService.IsModern && !newer)
+                ? "GhostButton"
+                : "AccentButton"),
             Margin = new Thickness(12, 0, 0, 0),
             VerticalAlignment = VerticalAlignment.Center,
             IsEnabled = !current && !string.IsNullOrWhiteSpace(release.SetupUrl) && !_busy

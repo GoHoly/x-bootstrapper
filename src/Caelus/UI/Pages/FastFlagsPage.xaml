@@ -2,14 +2,14 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel>
-        <TextBlock Text="Fast Flags" Style="{StaticResource PageTitle}"/>
+        <TextBlock Text="Fast Flags" Style="{DynamicResource PageTitle}"/>
         <TextBlock Text="Presets are written into Octane ClientSettings as soon as you change them. Rejoin the game for them to apply. Octane can ignore some flags; the file still updates."
-                   Style="{StaticResource PageSubtitle}"/>
+                   Style="{DynamicResource PageSubtitle}"/>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="Presets" FontWeight="SemiBold"/>
-                <TextBlock Text="Framerate cap" Style="{StaticResource FieldLabel}" Margin="0,12,0,6"/>
+                <TextBlock Text="Presets" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Text="Framerate cap" Style="{DynamicResource FieldLabel}" Margin="0,12,0,6"/>
                 <ComboBox x:Name="FpsBox">
                     <ComboBoxItem Content="Default"/>
                     <ComboBoxItem Content="60"/>
@@ -18,16 +18,16 @@
                     <ComboBoxItem Content="240"/>
                     <ComboBoxItem Content="Unlimited"/>
                 </ComboBox>
-                <TextBlock Text="Renderer" Style="{StaticResource FieldLabel}" Margin="0,12,0,6"/>
+                <TextBlock Text="Renderer" Style="{DynamicResource FieldLabel}" Margin="0,12,0,6"/>
                 <ComboBox x:Name="RenderBox">
                     <ComboBoxItem Content="Automatic"/>
                     <ComboBoxItem Content="Direct3D 11"/>
                     <ComboBoxItem Content="Vulkan"/>
                     <ComboBoxItem Content="OpenGL"/>
                 </ComboBox>
-                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0" FontSize="12"
+                <TextBlock Style="{DynamicResource CardText}" Margin="0,8,0,0"
                            Text="Direct3D 11 is the working renderer on this 2021 client. OpenGL and Vulkan used to disable D3D11, which is what broke shadows. Those modes now only set a preference and will not turn Direct3D off."/>
-                <TextBlock Text="Texture quality" Style="{StaticResource FieldLabel}" Margin="0,12,0,6"/>
+                <TextBlock Text="Texture quality" Style="{DynamicResource FieldLabel}" Margin="0,12,0,6"/>
                 <ComboBox x:Name="TextureBox">
                     <ComboBoxItem Content="Default"/>
                     <ComboBoxItem Content="Low"/>
@@ -37,16 +37,16 @@
                 <CheckBox x:Name="PostFxBox" Content="Disable post-processing"/>
                 <CheckBox x:Name="FpsCounterBox" Content="Show FPS counter" Margin="0,10,0,0"/>
                 <CheckBox x:Name="PerfBox" Content="Performance mode" Margin="0,8,0,0"/>
-                <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0" FontSize="12"
+                <TextBlock Style="{DynamicResource CardText}" Margin="0,8,0,0"
                            Text="Performance mode unlocks FPS, shows the counter, and cuts post-processing, MSAA, grass, and extra lighting work. It does not turn Direct3D 11 off."/>
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="Custom flags" FontWeight="SemiBold"/>
-                <TextBlock Text="Added on top of the presets above. Values are written as text; true/false become True/False."
-                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,10" FontSize="12"/>
+                <TextBlock Text="Custom flags" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Style="{DynamicResource CardText}" Text="Added on top of the presets above. Values are written as text; true/false become True/False."
+                           Margin="0,4,0,10"/>
                 <TextBox x:Name="FilterBox" Margin="0,0,0,10" ToolTip="Filter by name"/>
                 <Grid Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
@@ -58,28 +58,28 @@
                     <TextBlock Grid.Column="1" Text="VALUE" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource MutedBrush}" Margin="8,0,0,0"/>
                 </Grid>
                 <StackPanel x:Name="FlagRows"/>
-                <TextBlock x:Name="FlagsStatus" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" FontSize="12" Margin="0,4,0,0"/>
+                <TextBlock Style="{DynamicResource CardText}" x:Name="FlagsStatus" Margin="0,4,0,0"/>
                 <WrapPanel Margin="0,10,0,0">
-                    <Button Content="Save flags" Style="{StaticResource AccentButton}" Click="Save_Click"/>
-                    <Button Content="Add flag" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="AddFlag_Click"/>
-                    <Button Content="Import JSON" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="Import_Click"/>
-                    <Button Content="Export JSON" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="Export_Click"/>
+                    <Button Content="Save flags" Style="{DynamicResource AccentButton}" Click="Save_Click"/>
+                    <Button Content="Add flag" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="AddFlag_Click"/>
+                    <Button Content="Import JSON" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="Import_Click"/>
+                    <Button Content="Export JSON" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="Export_Click"/>
                 </WrapPanel>
             </StackPanel>
         </Border>
 
-        <Border Style="{StaticResource Card}">
+        <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="Flag profiles" FontWeight="SemiBold"/>
-                <TextBlock Text="Save the custom flags above under a name and switch between sets. Loading replaces the table (presets are not changed)."
-                           Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,12" FontSize="12"/>
+                <TextBlock Text="Flag profiles" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Style="{DynamicResource CardText}" Text="Save the custom flags above under a name and switch between sets. Loading replaces the table (presets are not changed)."
+                           Margin="0,4,0,12"/>
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="Delete" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="DeleteProfile_Click"/>
-                    <Button DockPanel.Dock="Right" Content="Load" Style="{StaticResource AccentButton}" Margin="8,0,0,0" Click="LoadProfile_Click"/>
+                    <Button DockPanel.Dock="Right" Content="Delete" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="DeleteProfile_Click"/>
+                    <Button DockPanel.Dock="Right" Content="Load" Style="{DynamicResource AccentButton}" Margin="8,0,0,0" Click="LoadProfile_Click"/>
                     <ComboBox x:Name="ProfileBox"/>
                 </DockPanel>
                 <DockPanel Margin="0,10,0,0">
-                    <Button DockPanel.Dock="Right" Content="Save as profile" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="SaveProfile_Click"/>
+                    <Button DockPanel.Dock="Right" Content="Save as profile" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="SaveProfile_Click"/>
                     <TextBox x:Name="ProfileNameBox"/>
                 </DockPanel>
             </StackPanel>

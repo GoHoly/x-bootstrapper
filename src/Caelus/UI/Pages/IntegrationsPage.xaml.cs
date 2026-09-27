@@ -91,12 +91,9 @@ public partial class IntegrationsPage : System.Windows.Controls.UserControl
         {
             Child = panel,
             Padding = new Thickness(12),
-            Margin = new Thickness(0, 0, 0, 10),
-            CornerRadius = new CornerRadius(4),
-            BorderThickness = new Thickness(1)
+            Margin = new Thickness(0, 0, 0, 10)
         };
-        root.SetResourceReference(Border.BackgroundProperty, "InputBrush");
-        root.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
+        root.SetResourceReference(StyleProperty, "InsetPanel");
 
         var row = new Row(root, name, path, arguments, enabled, autoClose);
         _rows.Add(row);

@@ -20,6 +20,13 @@ public enum AppTheme
     XyxyDark
 }
 
+/// <summary>Visual style applied on top of the theme colors. Classic is the pre-2.2 look.</summary>
+public enum UiStyle
+{
+    Modern,
+    Classic
+}
+
 public enum RenderingMode
 {
     Automatic,
@@ -36,6 +43,8 @@ public sealed class Settings
 
     public AppTheme Theme { get; set; } = AppTheme.Dark;
     public BootstrapperStyle BootstrapperStyle { get; set; } = BootstrapperStyle.Fluent;
+    // Missing in older settings files, so existing users get the new Modern style too.
+    public UiStyle UiStyle { get; set; } = UiStyle.Modern;
     public bool UiSounds { get; set; } = true;
 
     public bool CheckForAppUpdates { get; set; } = true;

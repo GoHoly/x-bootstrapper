@@ -28,11 +28,18 @@ public sealed class ThemePalette
     public bool Playful { get; init; }
 }
 
+/// <summary>
+/// Themes are color palettes; the style (Modern or Classic) is the set of control templates and
+/// layout metrics. Each is its own ResourceDictionary in Application.Resources.MergedDictionaries:
+/// [0] = UI/Themes/Modern.xaml or UI/Themes/Classic.xaml, [1] = the palette brushes for the theme in
+/// that style. Both are swapped at runtime. Classic palettes and Classic.xaml are the pre-2.2 look, unchanged.
+/// </summary>
 public static class ThemeService
 {
     public static event Action? Changed;
 
-    public static readonly ThemePalette[] All =
+    /// <summary>The pre-2.2 palettes, used with the Classic style.</summary>
+    public static readonly ThemePalette[] ClassicPalettes =
     {
         new()
         {
@@ -185,27 +192,252 @@ public static class ThemeService
         }
     };
 
-    public static ThemePalette Current { get; private set; } = All[0];
+    /// <summary>The redesigned palettes, used with the Modern style (default).</summary>
+    public static readonly ThemePalette[] ModernPalettes =
+    {
+        new()
+        {
+            Id = AppTheme.Dark,
+            Name = "Midnight",
+            Blurb = "Near-black with a violet accent. Default.",
+            Accent = Rgb(0x8B, 0x7C, 0xF6),
+            AccentHover = Rgb(0x9E, 0x91, 0xFA),
+            AccentForeground = Rgb(0xFF, 0xFF, 0xFF),
+            Background = Rgb(0x0E, 0x0E, 0x12),
+            Surface = Rgb(0x13, 0x13, 0x18),
+            Card = Rgb(0x16, 0x16, 0x1C),
+            Sidebar = Rgb(0x0A, 0x0A, 0x0D),
+            Border = Rgb(0x25, 0x25, 0x2E),
+            Text = Rgb(0xEC, 0xEC, 0xF1),
+            Muted = Rgb(0x8B, 0x8B, 0x99),
+            Danger = Rgb(0xE5, 0x48, 0x4D),
+            Input = Rgb(0x1B, 0x1B, 0x22),
+            Hover = Rgb(0x20, 0x20, 0x28),
+            Popup = Rgb(0x18, 0x18, 0x1F),
+            Track = Rgb(0x26, 0x26, 0x30)
+        },
+        new()
+        {
+            Id = AppTheme.Octane,
+            Name = "Octane",
+            Blurb = "Deep navy and a clean red.",
+            Accent = Rgb(0xE5, 0x48, 0x4D),
+            AccentHover = Rgb(0xEF, 0x5F, 0x63),
+            AccentForeground = Rgb(0xFF, 0xFF, 0xFF),
+            Background = Rgb(0x0B, 0x10, 0x17),
+            Surface = Rgb(0x0F, 0x15, 0x1E),
+            Card = Rgb(0x12, 0x1A, 0x24),
+            Sidebar = Rgb(0x08, 0x0C, 0x12),
+            Border = Rgb(0x1F, 0x2A, 0x38),
+            Text = Rgb(0xE8, 0xEE, 0xF5),
+            Muted = Rgb(0x85, 0x94, 0xA6),
+            Danger = Rgb(0xF2, 0x55, 0x5A),
+            Input = Rgb(0x16, 0x20, 0x2C),
+            Hover = Rgb(0x1A, 0x25, 0x33),
+            Popup = Rgb(0x11, 0x18, 0x22),
+            Track = Rgb(0x1F, 0x2A, 0x38)
+        },
+        new()
+        {
+            Id = AppTheme.Dusk,
+            Name = "Dusk",
+            Blurb = "Soft plum shadow and warm clay.",
+            Accent = Rgb(0xD9, 0x73, 0x5B),
+            AccentHover = Rgb(0xE5, 0x87, 0x6F),
+            AccentForeground = Rgb(0xFF, 0xFF, 0xFF),
+            Background = Rgb(0x14, 0x12, 0x17),
+            Surface = Rgb(0x19, 0x16, 0x1D),
+            Card = Rgb(0x1C, 0x19, 0x21),
+            Sidebar = Rgb(0x10, 0x0E, 0x13),
+            Border = Rgb(0x2C, 0x28, 0x33),
+            Text = Rgb(0xEE, 0xE8, 0xE4),
+            Muted = Rgb(0x9A, 0x90, 0x99),
+            Danger = Rgb(0xE5, 0x53, 0x4B),
+            Input = Rgb(0x22, 0x1E, 0x27),
+            Hover = Rgb(0x27, 0x23, 0x2D),
+            Popup = Rgb(0x1B, 0x18, 0x20),
+            Track = Rgb(0x2C, 0x28, 0x33)
+        },
+        new()
+        {
+            Id = AppTheme.Light,
+            Name = "Paper",
+            Blurb = "Warm white and a deep red.",
+            Accent = Rgb(0xB9, 0x3A, 0x32),
+            AccentHover = Rgb(0xA3, 0x31, 0x2A),
+            AccentForeground = Rgb(0xFF, 0xFF, 0xFF),
+            Background = Rgb(0xF6, 0xF4, 0xF0),
+            Surface = Rgb(0xFB, 0xFA, 0xF7),
+            Card = Rgb(0xFF, 0xFF, 0xFF),
+            Sidebar = Rgb(0xEF, 0xEC, 0xE6),
+            Border = Rgb(0xE3, 0xDE, 0xD5),
+            Text = Rgb(0x1F, 0x1B, 0x16),
+            Muted = Rgb(0x6F, 0x67, 0x5C),
+            Danger = Rgb(0xC0, 0x36, 0x2C),
+            Input = Rgb(0xFF, 0xFF, 0xFF),
+            Hover = Rgb(0xE9, 0xE5, 0xDE),
+            Popup = Rgb(0xFF, 0xFF, 0xFF),
+            Track = Rgb(0xE3, 0xDE, 0xD5)
+        },
+        new()
+        {
+            Id = AppTheme.Classic,
+            Name = "Slate",
+            Blurb = "Cool gray and a crisp blue. The old launcher, tidied up.",
+            Accent = Rgb(0x25, 0x63, 0xEB),
+            AccentHover = Rgb(0x1D, 0x4E, 0xD8),
+            AccentForeground = Rgb(0xFF, 0xFF, 0xFF),
+            Background = Rgb(0xF3, 0xF4, 0xF6),
+            Surface = Rgb(0xF9, 0xFA, 0xFB),
+            Card = Rgb(0xFF, 0xFF, 0xFF),
+            Sidebar = Rgb(0xE9, 0xEB, 0xEF),
+            Border = Rgb(0xDC, 0xE0, 0xE6),
+            Text = Rgb(0x16, 0x18, 0x1D),
+            Muted = Rgb(0x5F, 0x66, 0x73),
+            Danger = Rgb(0xDC, 0x26, 0x26),
+            Input = Rgb(0xFF, 0xFF, 0xFF),
+            Hover = Rgb(0xE3, 0xE6, 0xEB),
+            Popup = Rgb(0xFF, 0xFF, 0xFF),
+            Track = Rgb(0xDC, 0xE0, 0xE6)
+        },
+        new()
+        {
+            Id = AppTheme.Xyxy,
+            Name = "xyxy's theme",
+            Blurb = "Blush, bows, and sparkles. Light and a little extra.",
+            Accent = Rgb(0xE0, 0x55, 0x9A),
+            AccentHover = Rgb(0xD1, 0x43, 0x89),
+            AccentForeground = Rgb(0xFF, 0xFF, 0xFF),
+            Background = Rgb(0xFF, 0xF6, 0xF9),
+            Surface = Rgb(0xFF, 0xFB, 0xFC),
+            Card = Rgb(0xFF, 0xFF, 0xFF),
+            Sidebar = Rgb(0xFF, 0xEE, 0xF4),
+            Border = Rgb(0xF6, 0xD5, 0xE2),
+            Text = Rgb(0x3F, 0x22, 0x33),
+            Muted = Rgb(0xA0, 0x74, 0x89),
+            Danger = Rgb(0xE1, 0x1D, 0x48),
+            Input = Rgb(0xFF, 0xFF, 0xFF),
+            Hover = Rgb(0xFF, 0xE4, 0xEE),
+            Popup = Rgb(0xFF, 0xFF, 0xFF),
+            Track = Rgb(0xF6, 0xD5, 0xE2),
+            Playful = true
+        },
+        new()
+        {
+            Id = AppTheme.XyxyDark,
+            Name = "xyxy's theme",
+            Blurb = "Same bows and sparkles, lights out.",
+            Accent = Rgb(0xF4, 0x72, 0xB6),
+            AccentHover = Rgb(0xF9, 0x8B, 0xC6),
+            AccentForeground = Rgb(0x2A, 0x0F, 0x1C),
+            Background = Rgb(0x12, 0x0D, 0x11),
+            Surface = Rgb(0x17, 0x11, 0x16),
+            Card = Rgb(0x1B, 0x14, 0x1A),
+            Sidebar = Rgb(0x0E, 0x0A, 0x0D),
+            Border = Rgb(0x33, 0x23, 0x2D),
+            Text = Rgb(0xFB, 0xEA, 0xF2),
+            Muted = Rgb(0xBC, 0x8C, 0xA3),
+            Danger = Rgb(0xFB, 0x71, 0x85),
+            Input = Rgb(0x22, 0x18, 0x20),
+            Hover = Rgb(0x2A, 0x1D, 0x27),
+            Popup = Rgb(0x1A, 0x13, 0x19),
+            Track = Rgb(0x33, 0x23, 0x2D),
+            Playful = true
+        }
+    };
 
-    public static ThemePalette Get(AppTheme theme) =>
-        All.FirstOrDefault(item => item.Id == theme) ?? All[0];
+    public static UiStyle Style { get; private set; } = UiStyle.Modern;
+
+    public static bool IsModern => Style == UiStyle.Modern;
+
+    /// <summary>The palettes for the active style.</summary>
+    public static ThemePalette[] All => PalettesFor(Style);
+
+    public static ThemePalette Current { get; private set; } = ModernPalettes[0];
+
+    public static ThemePalette[] PalettesFor(UiStyle style) =>
+        style == UiStyle.Classic ? ClassicPalettes : ModernPalettes;
+
+    public static ThemePalette Get(AppTheme theme) => Get(theme, Style);
+
+    public static ThemePalette Get(AppTheme theme, UiStyle style)
+    {
+        var palettes = PalettesFor(style);
+        return palettes.FirstOrDefault(item => item.Id == theme) ?? palettes[0];
+    }
 
     public static bool IsXyxy(AppTheme theme) => theme is AppTheme.Xyxy or AppTheme.XyxyDark;
 
-    public static void Apply(AppTheme theme)
+    private static readonly Dictionary<UiStyle, ResourceDictionary> StyleDictionaries = new();
+
+    /// <summary>Applies a theme in the current style.</summary>
+    public static void Apply(AppTheme theme) => Apply(theme, Style);
+
+    public static void Apply(AppTheme theme, UiStyle style)
     {
         if (Application.Current is null)
             return;
 
-        var palette = Get(theme);
+        var palette = Get(theme, style);
+        Style = style;
         Current = palette;
-        var resources = Application.Current.Resources;
 
-        resources["AccentColor"] = palette.Accent;
+        var merged = Application.Current.Resources.MergedDictionaries;
+        var styles = StyleDictionary(style);
+        var colors = PaletteDictionary(palette);
+        if (merged.Count == 2)
+        {
+            if (!ReferenceEquals(merged[0], styles))
+                merged[0] = styles;
+            merged[1] = colors;
+        }
+        else
+        {
+            merged.Clear();
+            merged.Add(styles);
+            merged.Add(colors);
+        }
+
+        Changed?.Invoke();
+    }
+
+    private static ResourceDictionary StyleDictionary(UiStyle style)
+    {
+        if (!StyleDictionaries.TryGetValue(style, out var dictionary))
+        {
+            // Reuse the copy App.xaml already loaded instead of parsing it twice.
+            var merged = Application.Current.Resources.MergedDictionaries;
+            var existing = merged.FirstOrDefault(item =>
+                item.Source?.OriginalString.EndsWith($"{style}.xaml", StringComparison.OrdinalIgnoreCase) == true);
+            if (existing is not null)
+            {
+                StyleDictionaries[style] = existing;
+                return existing;
+            }
+
+
+            dictionary = new ResourceDictionary
+            {
+                Source = new Uri($"pack://application:,,,/UI/Themes/{style}.xaml", UriKind.Absolute)
+            };
+            StyleDictionaries[style] = dictionary;
+        }
+
+        return dictionary;
+    }
+
+    /// <summary>The per-theme color dictionary (same keys in both styles).</summary>
+    public static ResourceDictionary PaletteDictionary(ThemePalette palette)
+    {
+        var resources = new ResourceDictionary
+        {
+            ["AccentColor"] = palette.Accent
+        };
         Set(resources, "AccentBrush", palette.Accent);
         Set(resources, "AccentHoverBrush", palette.AccentHover);
         Set(resources, "AccentForegroundBrush", palette.AccentForeground);
         Set(resources, "AccentSoftBrush", Color.FromArgb(0x36, palette.Accent.R, palette.Accent.G, palette.Accent.B));
+        Set(resources, "AccentSubtleBrush", Color.FromArgb(0x1F, palette.Accent.R, palette.Accent.G, palette.Accent.B));
         Set(resources, "BackgroundBrush", palette.Background);
         Set(resources, "SurfaceBrush", palette.Surface);
         Set(resources, "CardBrush", palette.Card);
@@ -218,13 +450,14 @@ public static class ThemeService
         Set(resources, "HoverBrush", palette.Hover);
         Set(resources, "PopupBrush", palette.Popup);
         Set(resources, "TrackBrush", palette.Track);
-
-        Changed?.Invoke();
+        return resources;
     }
 
     private static void Set(ResourceDictionary resources, string key, Color color)
     {
-        resources[key] = new SolidColorBrush(color);
+        var brush = new SolidColorBrush(color);
+        brush.Freeze();
+        resources[key] = brush;
     }
 
     private static Color Rgb(byte r, byte g, byte b) => Color.FromRgb(r, g, b);

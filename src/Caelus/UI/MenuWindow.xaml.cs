@@ -1,5 +1,6 @@
 using System.Windows;
 using Caelus.Core;
+using Caelus.Models;
 using Caelus.UI.Pages;
 
 namespace Caelus.UI;
@@ -11,17 +12,41 @@ public partial class MenuWindow : Window
         InitializeComponent();
         Closed += (_, _) => App.RequestExitIfIdle();
         PlayfulMotion.Attach(this, SparkleLayer);
-        ThemeService.Changed += RefreshPlayfulCopy;
-        Closed += (_, _) => ThemeService.Changed -= RefreshPlayfulCopy;
+        _style = ThemeService.Style;
+        ThemeService.Changed += OnThemeChanged;
+        Closed += (_, _) => ThemeService.Changed -= OnThemeChanged;
         RefreshPlayfulCopy();
         PageHost.Content = new ModsPage();
     }
 
+    private UiStyle _style;
+
+    private void OnThemeChanged()
+    {
+        RefreshPlayfulCopy();
+        if (ThemeService.Style == _style)
+            return;
+
+        // Code-built rows pick their styles when created, so rebuild the open page for the new style.
+        _style = ThemeService.Style;
+        Dispatcher.BeginInvoke(ReloadPage);
+    }
+
+    private void ReloadPage()
+    {
+        var nav = new[] { NavMods, NavFlags, NavAppearance, NavBehaviour, NavIntegrations, NavInstall, NavAbout }
+            .FirstOrDefault(item => item.IsChecked == true);
+        if (nav is not null)
+            PageHost.Content = CreatePage(nav);
+    }
+
     private void RefreshPlayfulCopy()
     {
-        var playful = PlayfulMotion.IsPlayful;
-        BrandTitle.Text = playful ? $"{AppInfo.Name} ✨" : AppInfo.Name;
-        BrandSub.Text = playful ? "for Octane 🎀" : "for Octane";
+        var themePlayful = PlayfulMotion.IsPlayful;
+        BrandTitle.Text = themePlayful ? $"{AppInfo.Name} ✨" : AppInfo.Name;
+        BrandSub.Text = themePlayful ? "for Octane 🎀" : "for Octane";
+        // Modern nav items have icons, so the emoji suffixes are Classic-only.
+        var playful = themePlayful && !ThemeService.IsModern;
         NavMods.Content = playful ? "Mods 🧁" : "Mods";
         NavFlags.Content = playful ? "Fast Flags ⭐" : "Fast Flags";
         NavAppearance.Content = playful ? "Appearance 💗" : "Appearance";
@@ -38,16 +63,22 @@ public partial class MenuWindow : Window
         if (PageHost is null)
             return;
 
-        if (sender == NavInstall) PageHost.Content = new InstallPage();
-        else if (sender == NavBehaviour) PageHost.Content = new BehaviourPage();
-        else if (sender == NavAppearance) PageHost.Content = new AppearancePage();
-        else if (sender == NavIntegrations) PageHost.Content = new IntegrationsPage();
-        else if (sender == NavFlags) PageHost.Content = new FastFlagsPage();
-        else if (sender == NavMods) PageHost.Content = new ModsPage();
-        else if (sender == NavAbout) PageHost.Content = new AboutPage();
+        PageHost.Content = CreatePage(sender);
 
         if (IsLoaded)
             PlayfulMotion.PopIn(PageHost);
+    }
+
+    private object? CreatePage(object sender)
+    {
+        if (sender == NavInstall) return new InstallPage();
+        if (sender == NavBehaviour) return new BehaviourPage();
+        if (sender == NavAppearance) return new AppearancePage();
+        if (sender == NavIntegrations) return new IntegrationsPage();
+        if (sender == NavFlags) return new FastFlagsPage();
+        if (sender == NavMods) return new ModsPage();
+        if (sender == NavAbout) return new AboutPage();
+        return PageHost.Content;
     }
 
     private void LaunchPlayer_Click(object sender, RoutedEventArgs e) => Launch(LaunchMode.Player);
