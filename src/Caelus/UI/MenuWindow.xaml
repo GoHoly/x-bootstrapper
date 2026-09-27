@@ -75,7 +75,7 @@
                 </Grid>
             </Border>
 
-            <ScrollViewer Grid.Row="1" Grid.Column="1" Style="{DynamicResource PageScroller}" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer x:Name="PageScroll" Grid.Row="1" Grid.Column="1" Style="{DynamicResource PageScroller}" VerticalScrollBarVisibility="Auto">
                 <ContentControl x:Name="PageHost" MaxWidth="760" HorizontalAlignment="Left"/>
             </ScrollViewer>
 

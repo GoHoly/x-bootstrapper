@@ -3,13 +3,14 @@ namespace Caelus.Core;
 public static class AppInfo
 {
     public const string Name = "X Bootstrapper";
-    public const string Version = "2.2.0";
+    public const string Version = "2.2.1";
     public const string Website = "https://octane.wtf";
     public const string Discord = "https://discord.com/invite/octanee";
     // Public Discord application "X BootStrapper For Octane" used for Rich Presence (not a secret).
     public const string DiscordClientId = "1553825879996628992";
-    // Rich Presence art asset key uploaded to that application.
-    public const string DiscordLargeImage = "octane";
+    // Rich Presence image. The application has no uploaded art asset, so Discord silently dropped the old
+    // "octane" key; a public image URL is proxied by Discord (mp:external) and always shows.
+    public const string DiscordLargeImage = "https://raw.githubusercontent.com/" + GitHubRepository + "/main/src/Caelus/Assets/x-mark.png";
     public const string DiscordLargeText = "X Bootstrapper for Octane";
     public const string ExeFileName = Name + ".exe";
     public const string LegacyFolderName = "Caelus";

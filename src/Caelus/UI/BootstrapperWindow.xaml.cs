@@ -49,6 +49,8 @@ public partial class BootstrapperWindow : Window
                 Progress.Value = Math.Clamp(value * 100, 0, 100);
         });
 
+        // Before the client starts: Discord only displays the Rich Presence connection that came first.
+        App.PrepareDiscord(_args.Mode == LaunchMode.Studio);
         try
         {
             var result = await bootstrapper.RunAsync(_cts.Token);
@@ -65,6 +67,7 @@ public partial class BootstrapperWindow : Window
             else
             {
                 result.Process?.Dispose();
+                App.ReleaseDiscord();
             }
 
             var fromMenu = App.Current.Windows.OfType<MenuWindow>().Any();
@@ -75,10 +78,12 @@ public partial class BootstrapperWindow : Window
         }
         catch (OperationCanceledException)
         {
+            App.ReleaseDiscord();
             Close();
         }
         catch (Exception ex)
         {
+            App.ReleaseDiscord();
             Logger.Error("Bootstrapper", ex);
             System.Windows.MessageBox.Show(ex.Message, AppInfo.Name, MessageBoxButton.OK, MessageBoxImage.Error);
             Close();

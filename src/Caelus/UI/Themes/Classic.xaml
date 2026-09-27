@@ -363,17 +363,21 @@
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Margin" Value="0,2,0,2"/>
+        <Setter Property="Padding" Value="0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,6">
-                        <Border x:Name="Box" Width="15" Height="15" CornerRadius="2"
-                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                                Background="{DynamicResource InputBrush}" VerticalAlignment="Center">
-                            <Path x:Name="Mark" Data="M 2.5 7.5 L 6 11 L 12.5 3.5" Stroke="{DynamicResource AccentForegroundBrush}" StrokeThickness="1.6" Visibility="Collapsed" Stretch="None"/>
-                        </Border>
-                        <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
+                    <!-- Transparent so the whole row takes the click, as with the Modern switch row. -->
+                    <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,6">
+                            <Border x:Name="Box" Width="15" Height="15" CornerRadius="2"
+                                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                    Background="{DynamicResource InputBrush}" VerticalAlignment="Center">
+                                <Path x:Name="Mark" Data="M 2.5 7.5 L 6 11 L 12.5 3.5" Stroke="{DynamicResource AccentForegroundBrush}" StrokeThickness="1.6" Visibility="Collapsed" Stretch="None"/>
+                            </Border>
+                            <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Box" Property="Background" Value="{DynamicResource AccentBrush}"/>

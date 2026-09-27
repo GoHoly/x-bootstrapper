@@ -1,15 +1,10 @@
-X Bootstrapper 2.2.0 is a visual redesign. Every screen is cleaner, and the previous look is one toggle away.
+X Bootstrapper 2.2.1 fixes the Classic style toggle and Discord Rich Presence, and gives the Octane theme Octane's own colors.
+
+## Fixed
+- **Classic style toggle works every time.** Switching styles rebuilds the Appearance page, and before this fix the page jumped back to the top and the Classic check box only reacted on its small box and label. So once Classic was on, clicking the toggle again usually hit empty space and nothing happened. The toggle now stays exactly where it was (under the pointer, with keyboard focus), and the whole row is clickable in both styles, so you can switch back and forth as often as you like. The choice is saved and kept after a restart
+- **Discord Rich Presence shows up while you play.** Discord only displays one Rich Presence from your PC at a time and keeps whichever app connected first. The Octane client connects its own a moment after it starts, so X Bootstrapper's presence was accepted but never shown. X Bootstrapper now connects as soon as a launch begins, so its presence is the one Discord shows (Discord can't show two at once), keeps it for the whole game session, and clears it when the game closes. The presence image also shows now (the old image key didn't exist on Discord's side). Discord replies are now written to the log
 
 ## Changed
-- **New Modern look for all 7 themes.** Every theme has new colors on a single design system: a full-height sidebar with icons and a clear selected state, cards with even spacing, toggle switches, rounded inputs and dropdowns, thin scrollbars, and primary, secondary and danger buttons
-- Midnight, the default theme, is now near-black with a soft violet accent to match the logo
-- The launch, update, installer and uninstall windows match the new look, with a thin progress bar on the launch and update windows
-- The old gray theme is called **Slate** in the Modern style
-- New and existing installs start in the Modern style
-
-## Added
-- **Classic style toggle** on the Appearance page. It restores the previous (before 2.2) look for whichever theme you pick, and switches instantly
-
-No features or settings were removed.
+- **Octane theme in Octane's colors:** near-black, purple-tinted backgrounds with a vivid purple accent, clearly different from Midnight's soft violet. The menu, launch, update and installer windows all use it. The Classic style's Octane colors are unchanged
 
 Existing installs update automatically from GitHub Releases. New users: download **X.Bootstrapper.Setup.exe**. No administrator account is required.

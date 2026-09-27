@@ -463,27 +463,30 @@
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Margin" Value="0,2,0,2"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Padding" Value="0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
-                    <Grid Background="Transparent" MinHeight="34">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <ContentPresenter VerticalAlignment="Center" Margin="0,0,14,0" RecognizesAccessKey="True"/>
-                        <Border x:Name="Track" Grid.Column="1" Width="40" Height="22" CornerRadius="11"
-                                BorderThickness="1" BorderBrush="{DynamicResource MutedBrush}" Background="{DynamicResource InputBrush}"
-                                VerticalAlignment="Center">
-                            <Ellipse x:Name="Thumb" Width="12" Height="12" Margin="5,0,0,0"
-                                     HorizontalAlignment="Left" VerticalAlignment="Center"
-                                     Fill="{DynamicResource MutedBrush}">
-                                <Ellipse.RenderTransform>
-                                    <TranslateTransform X="0"/>
-                                </Ellipse.RenderTransform>
-                            </Ellipse>
-                        </Border>
-                    </Grid>
+                    <Border Background="Transparent" Padding="{TemplateBinding Padding}">
+                        <Grid Background="Transparent" MinHeight="34">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ContentPresenter VerticalAlignment="Center" Margin="0,0,14,0" RecognizesAccessKey="True"/>
+                            <Border x:Name="Track" Grid.Column="1" Width="40" Height="22" CornerRadius="11"
+                                    BorderThickness="1" BorderBrush="{DynamicResource MutedBrush}" Background="{DynamicResource InputBrush}"
+                                    VerticalAlignment="Center">
+                                <Ellipse x:Name="Thumb" Width="12" Height="12" Margin="5,0,0,0"
+                                         HorizontalAlignment="Left" VerticalAlignment="Center"
+                                         Fill="{DynamicResource MutedBrush}">
+                                    <Ellipse.RenderTransform>
+                                        <TranslateTransform X="0"/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                            </Border>
+                        </Grid>
+                    </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource TextBrush}"/>

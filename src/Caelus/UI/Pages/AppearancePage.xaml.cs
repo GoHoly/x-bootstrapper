@@ -17,8 +17,10 @@ public partial class AppearancePage : System.Windows.Controls.UserControl
             App.Save();
         };
         ClassicStyleBox.IsChecked = App.Settings.Prop.UiStyle == UiStyle.Classic;
-        ClassicStyleBox.Checked += (_, _) => SetStyle(UiStyle.Classic);
-        ClassicStyleBox.Unchecked += (_, _) => SetStyle(UiStyle.Modern);
+        // Focus first: the menu rebuilds this page in the other style and puts the focused toggle back
+        // exactly where it was, so it can be clicked (or flipped with Space) again right away.
+        ClassicStyleBox.Checked += (_, _) => { ClassicStyleBox.Focus(); SetStyle(UiStyle.Classic); };
+        ClassicStyleBox.Unchecked += (_, _) => { ClassicStyleBox.Focus(); SetStyle(UiStyle.Modern); };
         SoundsBox.IsChecked = App.Settings.Prop.UiSounds;
         SoundsBox.Checked += (_, _) => { App.Settings.Prop.UiSounds = true; App.Save(); };
         SoundsBox.Unchecked += (_, _) => { App.Settings.Prop.UiSounds = false; App.Save(); };

@@ -120,6 +120,29 @@ public partial class App : System.Windows.Application
 
         // Developer screenshot mode (see UiShots): render the UI to PNGs and exit, nothing else runs.
         var shots = Array.FindIndex(e.Args, arg => arg.Equals("-uishots", StringComparison.OrdinalIgnoreCase));
+        var toggle = Array.FindIndex(e.Args, arg => arg.Equals("-uitoggle", StringComparison.OrdinalIgnoreCase));
+        var rpcTest = Array.FindIndex(e.Args, arg => arg.Equals("-rpctest", StringComparison.OrdinalIgnoreCase));
+        if (rpcTest >= 0)
+        {
+            var file = rpcTest + 1 < e.Args.Length ? e.Args[rpcTest + 1] : Path.Combine(Paths.Base, "rpctest.txt");
+            var hold = rpcTest + 2 < e.Args.Length && int.TryParse(e.Args[rpcTest + 2], out var secs) ? Math.Clamp(secs, 1, 120) : 5;
+            _ = RunPresenceTestAsync(file, hold);
+            return;
+        }
+
+        if (toggle >= 0)
+        {
+            var persist = Array.FindIndex(e.Args, arg => arg.Equals("-persist", StringComparison.OrdinalIgnoreCase));
+            UiStyle? persistStyle = persist >= 0 && persist + 1 < e.Args.Length && Enum.TryParse<UiStyle>(e.Args[persist + 1], true, out var parsed)
+                ? parsed
+                : null;
+            _ = UiShots.RunToggleTestAsync(
+                toggle + 1 < e.Args.Length && !e.Args[toggle + 1].StartsWith('-') ? e.Args[toggle + 1] : Path.Combine(Paths.Base, "ui-toggle"),
+                e.Args.Any(arg => arg.Equals("-realmouse", StringComparison.OrdinalIgnoreCase)),
+                persistStyle);
+            return;
+        }
+
         if (shots >= 0)
         {
             _ = UiShots.RunAsync(shots + 1 < e.Args.Length ? e.Args[shots + 1] : Path.Combine(Paths.Base, "ui-shots"));
@@ -243,7 +266,7 @@ public partial class App : System.Windows.Application
 
     public static void Save()
     {
-        if (UiShots.Active)
+        if (UiShots.Active && !UiShots.AllowSave)
             return;
 
         Settings.Save();
@@ -357,51 +380,109 @@ public partial class App : System.Windows.Application
 
     private static readonly TimeSpan PresenceRetry = TimeSpan.FromSeconds(20);
     private const int PresenceMaxFailures = 15;
+    private static readonly SemaphoreSlim DiscordGate = new(1, 1);
 
     /// <summary>
-    /// Keeps Rich Presence up for the session: connects (READY handshake), sets the activity, and
-    /// reconnects if Discord starts later or restarts. Gives up after repeated failures.
+    /// Opens the Rich Presence connection as soon as a launch starts, before the client runs.
+    /// Discord shows one local Rich Presence at a time and keeps the connection that came first; the Octane
+    /// client opens its own a moment after it starts, so connecting only once the client was running (as
+    /// before 2.2.1) meant X Bootstrapper's presence was accepted but never displayed.
     /// </summary>
-    private static async Task StartPresenceAsync(GameSession session)
+    public static void PrepareDiscord(bool studio)
+    {
+        if (!Settings.Prop.DiscordRichPresence || UiShots.Active)
+            return;
+
+        _ = PrepareDiscordAsync(studio);
+    }
+
+    private static async Task PrepareDiscordAsync(bool studio)
+    {
+        try
+        {
+            var discord = await EnsureDiscordAsync();
+            if (discord is null || Session is not null)
+                return;
+
+            discord.SetPresence(studio ? "Starting Octane Studio" : "Starting Octane", null, DateTimeOffset.UtcNow);
+            // The launch window ends in a session (which takes the connection over) or not at all.
+            await Task.Delay(TimeSpan.FromMinutes(3));
+            if (Session is null && ReferenceEquals(Discord, discord))
+                ReleaseDiscord();
+        }
+        catch (Exception ex)
+        {
+            Logger.Write("Discord", $"Rich Presence failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>Drops a connection opened for a launch that was cancelled or failed.</summary>
+    public static void ReleaseDiscord()
+    {
+        if (Session is not null)
+            return;
+
+        Discord?.Dispose();
+        Discord = null;
+    }
+
+    /// <summary>Returns the live connection, connecting (READY handshake) if there is none. One at a time.</summary>
+    private static async Task<DiscordService?> EnsureDiscordAsync()
     {
         var clientId = Settings.Prop.EffectiveDiscordClientId;
         if (!clientId.All(char.IsDigit))
         {
-            Logger.Write("Discord", "The custom Discord application ID is not a number; Rich Presence is off for this session.");
-            return;
+            Logger.Write("Discord", "The custom Discord application ID is not a number; Rich Presence is off.");
+            return null;
         }
 
+        await DiscordGate.WaitAsync();
+        try
+        {
+            if (Discord is { Connected: true } live)
+                return live;
+
+            Discord?.Dispose();
+            Discord = await Task.Run(() => DiscordService.ConnectAsync(clientId));
+            return Discord;
+        }
+        finally
+        {
+            DiscordGate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Keeps Rich Presence up for the whole session: reuses the connection opened at launch (or connects),
+    /// shows the session, and reconnects if Discord starts later or restarts. Cleared when the session ends.
+    /// </summary>
+    private static async Task StartPresenceAsync(GameSession session)
+    {
         var failures = 0;
+        DiscordService? shownOn = null;
         while (ReferenceEquals(Session, session) && failures < PresenceMaxFailures)
         {
             try
             {
-                if (Discord is not { Connected: true })
+                var discord = await EnsureDiscordAsync();
+                if (!ReferenceEquals(Session, session))
+                    return;
+
+                if (discord is null)
                 {
-                    Discord?.Dispose();
-                    Discord = null;
-                    var discord = await Task.Run(() => DiscordService.ConnectAsync(clientId));
-                    if (discord is null)
-                    {
-                        failures++;
-                    }
-                    else if (!ReferenceEquals(Session, session))
-                    {
-                        discord.Dispose();
-                        return;
-                    }
-                    else
-                    {
-                        failures = 0;
-                        Discord = discord;
-                        var s = Settings.Prop;
-                        // With activity tracking off, the place is never shared.
-                        var place = s.ActivityTracking ? session.PlaceId : null;
-                        discord.SetPresence(
-                            session.IsStudio ? "Building in Octane Studio" : "Playing on Octane",
-                            place is null ? (session.IsStudio ? "Octane Studio" : "In game") : $"Place {place}",
-                            session.Started);
-                    }
+                    failures++;
+                }
+                else if (!ReferenceEquals(discord, shownOn))
+                {
+                    failures = 0;
+                    shownOn = discord;
+                    var s = Settings.Prop;
+                    // With activity tracking off, the place is never shared.
+                    var place = s.ActivityTracking ? session.PlaceId : null;
+                    discord.SetPresence(
+                        session.IsStudio ? "Building in Octane Studio" : "Playing on Octane",
+                        place is null ? (session.IsStudio ? "Octane Studio" : "In game") : $"Place {place}",
+                        session.Started);
                 }
             }
             catch (Exception ex)
@@ -412,6 +493,53 @@ public partial class App : System.Windows.Application
 
             await Task.Delay(PresenceRetry);
         }
+    }
+
+    /// <summary>
+    /// <c>-rpctest &lt;result file&gt; [seconds]</c>: connects, shows a presence for a few seconds, clears it,
+    /// and writes Discord's replies to the file. Nothing else runs (no game, no menu).
+    /// </summary>
+    private static async Task RunPresenceTestAsync(string file, int seconds)
+    {
+        var lines = new List<string>();
+        var ok = false;
+        try
+        {
+            var discord = await EnsureDiscordAsync();
+            if (discord is null)
+            {
+                lines.Add("FAIL: could not connect to Discord (is it running?)");
+            }
+            else
+            {
+                lines.Add("connected (READY received)");
+                var reply = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+                discord.ActivityReply += json => reply.TrySetResult(json);
+                discord.SetPresence("Playing on Octane", "In game", DateTimeOffset.UtcNow);
+                var answer = await Task.WhenAny(reply.Task, Task.Delay(5000)) == reply.Task ? reply.Task.Result : null;
+                lines.Add("SET_ACTIVITY reply: " + (answer ?? "(none within 5 s)"));
+                ok = answer is not null && !answer.Contains("\"evt\":\"ERROR\"", StringComparison.Ordinal) &&
+                     answer.Contains("\"large_image\"", StringComparison.Ordinal);
+                await Task.Delay(TimeSpan.FromSeconds(seconds));
+
+                var cleared = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+                discord.ActivityReply += json => cleared.TrySetResult(json);
+                discord.Clear();
+                var clearAnswer = await Task.WhenAny(cleared.Task, Task.Delay(5000)) == cleared.Task ? cleared.Task.Result : null;
+                lines.Add("clear reply: " + (clearAnswer ?? "(none within 5 s)"));
+                ok &= clearAnswer?.Contains("\"data\":null", StringComparison.Ordinal) == true;
+                Discord = null;
+                discord.Dispose();
+            }
+        }
+        catch (Exception ex)
+        {
+            lines.Add("EXCEPTION " + ex);
+        }
+
+        lines.Add(ok ? "RESULT: presence accepted (with image) and cleared" : "RESULT: FAIL");
+        File.WriteAllLines(file, lines);
+        Current.Shutdown(ok ? 0 : 1);
     }
 
     public static void EndSession()

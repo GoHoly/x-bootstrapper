@@ -38,6 +38,9 @@ public static class ThemeService
 {
     public static event Action? Changed;
 
+    /// <summary>Raised just before the style dictionary is swapped (the old visuals are still laid out).</summary>
+    public static event Action<UiStyle>? StyleChanging;
+
     /// <summary>The pre-2.2 palettes, used with the Classic style.</summary>
     public static readonly ThemePalette[] ClassicPalettes =
     {
@@ -220,22 +223,24 @@ public static class ThemeService
         {
             Id = AppTheme.Octane,
             Name = "Octane",
-            Blurb = "Deep navy and a clean red.",
-            Accent = Rgb(0xE5, 0x48, 0x4D),
-            AccentHover = Rgb(0xEF, 0x5F, 0x63),
+            Blurb = "Octane's own black and a vivid purple.",
+            // Brand purple: brighter and more saturated than Midnight's soft violet, on purple-tinted blacks
+            // (Midnight's surfaces are neutral). White on the accent and the accent on the window both pass 4.4:1.
+            Accent = Rgb(0x9F, 0x45, 0xF2),
+            AccentHover = Rgb(0xB0, 0x62, 0xF7),
             AccentForeground = Rgb(0xFF, 0xFF, 0xFF),
-            Background = Rgb(0x0B, 0x10, 0x17),
-            Surface = Rgb(0x0F, 0x15, 0x1E),
-            Card = Rgb(0x12, 0x1A, 0x24),
-            Sidebar = Rgb(0x08, 0x0C, 0x12),
-            Border = Rgb(0x1F, 0x2A, 0x38),
-            Text = Rgb(0xE8, 0xEE, 0xF5),
-            Muted = Rgb(0x85, 0x94, 0xA6),
+            Background = Rgb(0x08, 0x06, 0x0C),
+            Surface = Rgb(0x0C, 0x09, 0x12),
+            Card = Rgb(0x11, 0x0C, 0x18),
+            Sidebar = Rgb(0x05, 0x03, 0x08),
+            Border = Rgb(0x2A, 0x1F, 0x3A),
+            Text = Rgb(0xEE, 0xEA, 0xF5),
+            Muted = Rgb(0xA1, 0x95, 0xB8),
             Danger = Rgb(0xF2, 0x55, 0x5A),
-            Input = Rgb(0x16, 0x20, 0x2C),
-            Hover = Rgb(0x1A, 0x25, 0x33),
-            Popup = Rgb(0x11, 0x18, 0x22),
-            Track = Rgb(0x1F, 0x2A, 0x38)
+            Input = Rgb(0x16, 0x0F, 0x20),
+            Hover = Rgb(0x1D, 0x14, 0x2A),
+            Popup = Rgb(0x12, 0x0D, 0x1A),
+            Track = Rgb(0x2C, 0x20, 0x3E)
         },
         new()
         {
@@ -379,6 +384,8 @@ public static class ThemeService
             return;
 
         var palette = Get(theme, style);
+        if (style != Style)
+            StyleChanging?.Invoke(style);
         Style = style;
         Current = palette;
 

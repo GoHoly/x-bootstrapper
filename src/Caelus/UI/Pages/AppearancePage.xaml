@@ -12,7 +12,8 @@
                 <TextBlock Style="{DynamicResource CardText}" Text="These only change X Bootstrapper. Octane keeps whatever you threw in Mods."
                            Margin="0,4,0,14"/>
                 <WrapPanel x:Name="ThemePanel"/>
-                <CheckBox x:Name="ClassicStyleBox" Content="Classic style" Margin="0,4,0,0"/>
+                <!-- Spans the card's full width (into its padding) so the row takes a click in either style. -->
+                <CheckBox x:Name="ClassicStyleBox" Content="Classic style" Margin="-16,4,-16,0" Padding="16,0,16,0"/>
                 <TextBlock Style="{DynamicResource CardText}" Margin="0,2,0,0"
                            Text="Brings back the previous X Bootstrapper look (before 2.2) for whichever theme you pick."/>
             </StackPanel>

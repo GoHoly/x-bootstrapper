@@ -22,6 +22,9 @@ public sealed class DiscordService : IDisposable
 
     public bool Connected => _pipe is { IsConnected: true } && !_disposed;
 
+    /// <summary>Raised (on a background thread) with Discord's raw reply to each SET_ACTIVITY.</summary>
+    public event Action<string>? ActivityReply;
+
     /// <summary>Connects and waits for READY. Returns null if Discord isn't running or rejects the ID.</summary>
     public static async Task<DiscordService?> ConnectAsync(string? clientId, CancellationToken token = default)
     {
@@ -123,8 +126,7 @@ public sealed class DiscordService : IDisposable
                     return;
                 }
 
-                if (json.Contains("\"evt\":\"ERROR\"", StringComparison.Ordinal))
-                    Logger.Write("Discord", $"Discord error: {json}");
+                LogReply(json);
             }
         }
         catch
@@ -132,6 +134,31 @@ public sealed class DiscordService : IDisposable
             /* pipe closed */
         }
     }
+
+    private void LogReply(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            var cmd = root.TryGetProperty("cmd", out var c) ? c.GetString() : null;
+            var error = root.TryGetProperty("evt", out var e) && e.ValueKind == JsonValueKind.String && e.GetString() == "ERROR";
+            if (error)
+                Logger.Write("Discord", $"Discord rejected {cmd}: {json}");
+            else if (cmd == "SET_ACTIVITY")
+                Logger.Write("Discord", root.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Object
+                    ? $"Presence accepted: {Shorten(json)}"
+                    : "Presence cleared.");
+            if (cmd == "SET_ACTIVITY")
+                ActivityReply?.Invoke(json);
+        }
+        catch (JsonException)
+        {
+            Logger.Write("Discord", $"Unreadable reply from Discord: {Shorten(json)}");
+        }
+    }
+
+    private static string Shorten(string text) => text.Length <= 600 ? text : text[..600] + "…";
 
     private async Task<(int Opcode, string Json)> ReadFrameAsync(CancellationToken token)
     {

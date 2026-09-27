@@ -14,12 +14,36 @@ public partial class MenuWindow : Window
         PlayfulMotion.Attach(this, SparkleLayer);
         _style = ThemeService.Style;
         ThemeService.Changed += OnThemeChanged;
-        Closed += (_, _) => ThemeService.Changed -= OnThemeChanged;
+        ThemeService.StyleChanging += OnStyleChanging;
+        Closed += (_, _) =>
+        {
+            ThemeService.Changed -= OnThemeChanged;
+            ThemeService.StyleChanging -= OnStyleChanging;
+        };
         RefreshPlayfulCopy();
         PageHost.Content = new ModsPage();
     }
 
     private UiStyle _style;
+
+    /// <summary>The control that switched the style (by name), where it sat in the page viewport, and the scroll offset.</summary>
+    private (string? Name, double Y, double Offset)? _anchor;
+
+    private void OnStyleChanging(UiStyle next)
+    {
+        // Recorded before the swap, while the page is still laid out in the old style.
+        _anchor = null;
+        if (PageHost?.Content is not FrameworkElement page || !page.IsLoaded)
+            return;
+
+        _anchor = (null, 0, PageScroll.VerticalOffset);
+        if (System.Windows.Input.Keyboard.FocusedElement is FrameworkElement { Name.Length: > 0 } focused &&
+            focused.IsVisible && page.IsAncestorOf(focused))
+        {
+            var y = focused.TranslatePoint(new System.Windows.Point(0, focused.ActualHeight / 2), PageScroll).Y;
+            _anchor = (focused.Name, y, PageScroll.VerticalOffset);
+        }
+    }
 
     private void OnThemeChanged()
     {
@@ -36,8 +60,29 @@ public partial class MenuWindow : Window
     {
         var nav = new[] { NavMods, NavFlags, NavAppearance, NavBehaviour, NavIntegrations, NavInstall, NavAbout }
             .FirstOrDefault(item => item.IsChecked == true);
-        if (nav is not null)
-            PageHost.Content = CreatePage(nav);
+        if (nav is null)
+            return;
+
+        PageHost.Content = CreatePage(nav);
+        if (_anchor is not { } anchor)
+            return;
+
+        // Keep the rebuilt page where it was: the control that was just clicked (the Classic style toggle)
+        // stays under the pointer and keeps focus, so it can be clicked again or flipped with Space.
+        _anchor = null;
+        PageScroll.UpdateLayout();
+        if (anchor.Name is not null && PageHost.Content is FrameworkElement page &&
+            page.FindName(anchor.Name) is FrameworkElement target && target.IsVisible)
+        {
+            var y = target.TranslatePoint(new System.Windows.Point(0, target.ActualHeight / 2), PageScroll).Y;
+            PageScroll.ScrollToVerticalOffset(Math.Max(0, PageScroll.VerticalOffset + y - anchor.Y));
+            PageScroll.UpdateLayout();
+            target.Focus();
+        }
+        else
+        {
+            PageScroll.ScrollToVerticalOffset(anchor.Offset);
+        }
     }
 
     private void RefreshPlayfulCopy()
