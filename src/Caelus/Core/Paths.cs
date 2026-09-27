@@ -18,6 +18,9 @@ public static class Paths
     public static string Downloads => Path.Combine(Base, "Downloads");
     public static string Logs => Path.Combine(Base, "Logs");
     public static string Modifications => Path.Combine(Base, "Modifications");
+    public static string ModBackups => Path.Combine(Base, "ModBackups");
+    public static string ModProfiles => Path.Combine(Base, "ModProfiles");
+    public static string PayloadManifest => Path.Combine(Base, ".xb-payload.txt");
     public static string Settings => Path.Combine(Base, "Settings.json");
     public static string State => Path.Combine(Base, "State.json");
     public static string Executable => Path.Combine(Base, AppInfo.ExeFileName);

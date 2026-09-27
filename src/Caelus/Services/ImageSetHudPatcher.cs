@@ -191,6 +191,27 @@ internal static class ImageSetHudPatcher
         return painted;
     }
 
+    /// <summary>Puts the stock atlas sheets back (uninstall / "Restore originals").</summary>
+    public static void Restore(string versionDirectory)
+    {
+        var atlasDir = Path.Combine(versionDirectory, "ExtraContent", "LuaPackages", "Packages",
+            "_Index", "UIBlox", "UIBlox", "App", "ImageSet", "ImageAtlas");
+        if (!Directory.Exists(atlasDir))
+            return;
+
+        RestoreOriginals(atlasDir, Path.Combine(atlasDir, ".caelus-orig"));
+        try
+        {
+            var stampPath = Path.Combine(atlasDir, ".caelus-hud-stamp");
+            if (File.Exists(stampPath))
+                File.Delete(stampPath);
+        }
+        catch (IOException)
+        {
+            /* ignore */
+        }
+    }
+
     private static bool Paint(string original, string destination, List<Sprite> sprites)
     {
         var temp = destination + ".caelus-tmp";

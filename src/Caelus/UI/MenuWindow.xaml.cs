@@ -9,6 +9,7 @@ public partial class MenuWindow : Window
     public MenuWindow()
     {
         InitializeComponent();
+        Closed += (_, _) => App.RequestExitIfIdle();
         PlayfulMotion.Attach(this, SparkleLayer);
         ThemeService.Changed += RefreshPlayfulCopy;
         Closed += (_, _) => ThemeService.Changed -= RefreshPlayfulCopy;
@@ -69,7 +70,9 @@ public partial class MenuWindow : Window
 
     private void Close_Click(object sender, RoutedEventArgs e)
     {
+        if (PageHost.Content is FastFlagsPage flags)
+            flags.Flush();
         App.Save();
-        System.Windows.Application.Current.Shutdown();
+        Close();
     }
 }

@@ -33,8 +33,25 @@ public static class InstallerService
         return Paths.DefaultBase;
     }
 
+    /// <summary>
+    /// Always install into a dedicated "X Bootstrapper" folder, so picking e.g. C:\Games never
+    /// makes C:\Games itself the install folder (uninstall only ever deletes files it owns).
+    /// </summary>
+    public static string NormalizeInstallLocation(string chosen)
+    {
+        var raw = Environment.ExpandEnvironmentVariables((chosen ?? "").Trim().Trim('"'));
+        if (string.IsNullOrWhiteSpace(raw))
+            return Paths.DefaultBase;
+
+        var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(raw));
+        if (!Path.GetFileName(full).Equals(AppInfo.Name, StringComparison.OrdinalIgnoreCase))
+            full = Path.Combine(full, AppInfo.Name);
+        return full;
+    }
+
     public static void Install(Settings settings, string location, bool createShortcuts, bool registerProtocols)
     {
+        location = NormalizeInstallLocation(location);
         Paths.Initialize(location);
         Directory.CreateDirectory(Paths.Base);
         CopyPayload(Environment.ProcessPath!, Paths.Executable);
@@ -58,54 +75,119 @@ public static class InstallerService
 
     public static void Uninstall(Settings settings, bool removeClient, bool removeData = false)
     {
+        try
+        {
+            ModService.RestoreAllOriginals();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Installer", ex);
+        }
+
         ProtocolService.Unregister();
         ShortcutService.RemoveAll();
         WindowsAppRegistration.Unregister();
 
         if (removeClient || removeData)
         {
-            TryDeleteDirectory(Paths.Versions);
-            TryDeleteDirectory(Paths.Downloads);
+            TryDeleteDirectory(Path.Combine(Paths.Base, "Versions"));
+            TryDeleteDirectory(Path.Combine(Paths.Base, "Downloads"));
         }
 
         settings.Installed = false;
         Logger.Write("Installer", removeData
-            ? $"Uninstalled {AppInfo.Name} and deleted all contents"
+            ? $"Uninstalled {AppInfo.Name} and deleted its data"
             : $"Uninstalled {AppInfo.Name}");
         Native.NotifyShell();
 
         if (removeData)
         {
             Logger.Close();
-            TryDeleteDirectory(Paths.Modifications);
-            TryDeleteDirectory(Paths.Logs);
-            TryDelete(Paths.Settings);
-            TryDelete(Paths.State);
-            TryDelete(Path.Combine(Paths.Base, "desktop.ini"));
-            TryDeleteDirectory(Paths.LegacyBase);
-            TryDeleteDirectory(Paths.PreviousBase);
+            foreach (var folder in new[] { Paths.Base, Paths.LegacyBase, Paths.PreviousBase })
+                DeleteKnownData(folder);
         }
 
         var setupUninstaller = TryLaunchSetupUninstaller();
         if (!setupUninstaller)
         {
-            TryDelete(Paths.Executable);
+            DeletePayload(Paths.Base);
             StripLegacyBinaries(Paths.Base);
         }
 
-        if (removeData)
-            ScheduleDeleteInstallFolder(waitSeconds: setupUninstaller ? 8 : 3);
+        foreach (var legacy in new[] { Paths.LegacyBase, Paths.PreviousBase })
+        {
+            StripLegacyBinaries(legacy);
+            TryDeleteEmptyLegacy(legacy);
+        }
+
+        ScheduleCleanup(deleteRunningExe: !setupUninstaller, waitSeconds: setupUninstaller ? 10 : 3);
     }
 
-    private static void ScheduleDeleteInstallFolder(int waitSeconds)
+    /// <summary>Deletes only folders and files X Bootstrapper creates, never the folder's other contents.</summary>
+    private static void DeleteKnownData(string folder)
+    {
+        if (!Directory.Exists(folder))
+            return;
+
+        foreach (var name in new[] { "Logs", "Modifications", "ModBackups", "ModProfiles", "Versions", "Downloads" })
+            TryDeleteDirectory(Path.Combine(folder, name));
+
+        foreach (var name in new[] { "Settings.json", "Settings.json.bak", "Settings.json.tmp", "State.json", "State.json.bak", "State.json.tmp", "desktop.ini" })
+            TryDelete(Path.Combine(folder, name));
+    }
+
+    private static void DeletePayload(string folder)
+    {
+        var manifest = Path.Combine(folder, Path.GetFileName(Paths.PayloadManifest));
+        if (File.Exists(manifest))
+        {
+            foreach (var line in File.ReadAllLines(manifest))
+            {
+                var relative = line.Trim();
+                if (string.IsNullOrWhiteSpace(relative) || Path.IsPathRooted(relative) || relative.Contains(".."))
+                    continue;
+                var path = Path.Combine(folder, relative);
+                if (!IsRunningExecutable(path))
+                    TryDelete(path);
+            }
+
+            TryDelete(manifest);
+        }
+
+        var stem = Path.GetFileNameWithoutExtension(AppInfo.ExeFileName);
+        foreach (var suffix in new[] { ".dll", ".pdb", ".runtimeconfig.json", ".deps.json" })
+            TryDelete(Path.Combine(folder, stem + suffix));
+        if (!IsRunningExecutable(Path.Combine(folder, AppInfo.ExeFileName)))
+            TryDelete(Path.Combine(folder, AppInfo.ExeFileName));
+    }
+
+    private static bool IsRunningExecutable(string path)
+    {
+        var running = Environment.ProcessPath;
+        return !string.IsNullOrWhiteSpace(running) &&
+               string.Equals(Path.GetFullPath(path), Path.GetFullPath(running), StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// After this process exits: delete the running exe (if it lives in the install folder) and remove
+    /// the install folder only if it is empty. rmdir without /s never deletes anything else.
+    /// </summary>
+    private static void ScheduleCleanup(bool deleteRunningExe, int waitSeconds)
     {
         try
         {
             var delay = Math.Max(2, waitSeconds);
+            var command = $"/c ping 127.0.0.1 -n {delay} > nul";
+            var running = Environment.ProcessPath;
+            if (deleteRunningExe && !string.IsNullOrWhiteSpace(running) &&
+                string.Equals(Path.GetDirectoryName(Path.GetFullPath(running)), Path.GetFullPath(Paths.Base), StringComparison.OrdinalIgnoreCase))
+                command += $" & del /f /q \"{running}\"";
+            command += $" & rmdir \"{Paths.Base}\"";
+
             Process.Start(new ProcessStartInfo
             {
                 FileName = "cmd.exe",
-                Arguments = $"/c ping 127.0.0.1 -n {delay} > nul & rmdir /s /q \"{Paths.Base}\"",
+                Arguments = command,
                 UseShellExecute = false,
                 CreateNoWindow = true
             });
@@ -160,6 +242,7 @@ public static class InstallerService
 
             var selfContained = File.Exists(Path.Combine(sourceDir, "coreclr.dll")) ||
                                 File.Exists(Path.Combine(sourceDir, "hostfxr.dll"));
+            var copied = new List<string>();
             if (selfContained)
             {
                 foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
@@ -171,21 +254,48 @@ public static class InstallerService
                     var dest = Path.Combine(destinationDir, relative);
                     Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
                     File.Copy(file, dest, overwrite: true);
+                    copied.Add(relative);
                 }
             }
             else
             {
                 File.Copy(sourceExe, destinationExe, overwrite: true);
+                copied.Add(Path.GetFileName(destinationExe));
                 var stem = Path.GetFileNameWithoutExtension(sourceExe);
                 foreach (var suffix in new[] { ".dll", ".runtimeconfig.json", ".deps.json" })
                 {
                     var from = Path.Combine(sourceDir, stem + suffix);
                     if (File.Exists(from))
+                    {
                         File.Copy(from, Path.Combine(destinationDir, Path.GetFileName(from)), overwrite: true);
+                        copied.Add(Path.GetFileName(from));
+                    }
                 }
             }
 
+            RecordPayload(destinationDir, copied);
+
             EnsureCasing(destinationExe);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Installer", ex);
+        }
+    }
+
+    private static void RecordPayload(string destinationDir, IEnumerable<string> relativeFiles)
+    {
+        try
+        {
+            var manifest = Path.Combine(destinationDir, Path.GetFileName(Paths.PayloadManifest));
+            var existing = File.Exists(manifest) ? File.ReadAllLines(manifest) : Array.Empty<string>();
+            var all = existing.Concat(relativeFiles)
+                .Select(line => line.Trim())
+                .Where(line => line.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(line => line, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            File.WriteAllLines(manifest, all);
         }
         catch (Exception ex)
         {
@@ -322,6 +432,9 @@ public static class InstallerService
                relative.StartsWith("Modifications", StringComparison.OrdinalIgnoreCase) ||
                relative.StartsWith("Versions", StringComparison.OrdinalIgnoreCase) ||
                relative.StartsWith("Downloads", StringComparison.OrdinalIgnoreCase) ||
+               relative.StartsWith("ModBackups", StringComparison.OrdinalIgnoreCase) ||
+               relative.StartsWith("ModProfiles", StringComparison.OrdinalIgnoreCase) ||
+               relative.StartsWith(".xb-payload", StringComparison.OrdinalIgnoreCase) ||
                relative.Equals("Settings.json", StringComparison.OrdinalIgnoreCase) ||
                relative.Equals("State.json", StringComparison.OrdinalIgnoreCase) ||
                relative.StartsWith("unins", StringComparison.OrdinalIgnoreCase) ||

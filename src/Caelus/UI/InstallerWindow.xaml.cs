@@ -10,8 +10,9 @@ public partial class InstallerWindow : Window
     public InstallerWindow()
     {
         InitializeComponent();
+        Closed += (_, _) => App.RequestExitIfIdle();
         PlayfulMotion.Attach(this, SparkleLayer);
-        LocationBox.Text = Paths.Base;
+        LocationBox.Text = InstallerService.NormalizeInstallLocation(Paths.Base);
     }
 
     private void Browse_Click(object sender, RoutedEventArgs e)
@@ -24,7 +25,7 @@ public partial class InstallerWindow : Window
         };
 
         if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            LocationBox.Text = dialog.SelectedPath;
+            LocationBox.Text = InstallerService.NormalizeInstallLocation(dialog.SelectedPath);
     }
 
     private void Install_Click(object sender, RoutedEventArgs e)
@@ -49,8 +50,5 @@ public partial class InstallerWindow : Window
         }
     }
 
-    private void Close_Click(object sender, RoutedEventArgs e)
-    {
-        System.Windows.Application.Current.Shutdown();
-    }
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
 }

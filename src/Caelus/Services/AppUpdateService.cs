@@ -10,10 +10,19 @@ namespace Caelus.Services;
 
 internal static class AppUpdateService
 {
+    // GitHub API calls: short timeout. Downloads use their own client with no overall timeout and a
+    // stall watchdog instead, so a slow connection can still finish a 70+ MB setup.
     private static readonly HttpClient Http = new()
     {
-        Timeout = TimeSpan.FromMinutes(5)
+        Timeout = TimeSpan.FromSeconds(30)
     };
+
+    private static readonly HttpClient DownloadClient = new()
+    {
+        Timeout = System.Threading.Timeout.InfiniteTimeSpan
+    };
+
+    private static readonly TimeSpan StallTimeout = TimeSpan.FromSeconds(60);
 
     private static readonly SemaphoreSlim Gate = new(1, 1);
     private static IReadOnlyList<AppRelease>? _cache;
@@ -23,14 +32,23 @@ internal static class AppUpdateService
     {
         Http.DefaultRequestHeaders.UserAgent.ParseAdd($"{AppInfo.Name.Replace(' ', '-')}/{AppInfo.Version}");
         Http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+        DownloadClient.DefaultRequestHeaders.UserAgent.ParseAdd($"{AppInfo.Name.Replace(' ', '-')}/{AppInfo.Version}");
     }
 
     public static async Task CheckInBackgroundAsync(LaunchArgs args)
     {
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
-            await TryApplyAsync(args, cts.Token, installIfAllowed: true);
+            if (args.SkipUpdate)
+                return;
+
+            // Only the GitHub query is time-boxed; the download has no overall timeout.
+            AppRelease? latest;
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
+                latest = await FindAutoUpdateAsync(cts.Token);
+
+            if (latest is not null)
+                await InstallAsync(latest, args, CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -38,33 +56,26 @@ internal static class AppUpdateService
         }
     }
 
-    public static async Task<bool> TryApplyAsync(LaunchArgs args, CancellationToken token, bool installIfAllowed)
+    private static async Task<AppRelease?> FindAutoUpdateAsync(CancellationToken token)
     {
-        if (args.SkipUpdate)
-            return false;
+        var latest = LatestStable(await QueryReleasesAsync(token));
+        if (latest is null || !IsNewer(latest.Version, AppInfo.Version))
+            return null;
 
-        try
-        {
-            var latest = (await QueryReleasesAsync(token)).FirstOrDefault(release => !release.Prerelease);
-            if (latest is null || !IsNewer(latest.Version, AppInfo.Version))
-                return false;
+        NotifyIfNew(latest);
 
-            NotifyIfNew(latest);
+        if (!App.Settings.Prop.CheckForAppUpdates)
+            return null;
+        if (string.Equals(App.State.Prop.SkippedAppVersion, latest.Version, StringComparison.OrdinalIgnoreCase))
+            return null;
 
-            var settings = App.Settings.Prop;
-            if (!installIfAllowed || !settings.CheckForAppUpdates)
-                return false;
-            if (string.Equals(App.State.Prop.SkippedAppVersion, latest.Version, StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            return await InstallAsync(latest, args, token);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            Logger.Error("Update", ex);
-            return false;
-        }
+        return latest;
     }
+
+    public static AppRelease? LatestStable(IEnumerable<AppRelease> releases) =>
+        releases.Where(release => !release.Prerelease)
+            .OrderByDescending(release => ParseOrZero(release.Version))
+            .FirstOrDefault();
 
     public static async Task<IReadOnlyList<AppRelease>> QueryReleasesAsync(CancellationToken token)
     {
@@ -133,10 +144,16 @@ internal static class AppUpdateService
             NotifyService.Show(AppInfo.Name, $"Updating to {release.Version}… {Summarize(release.Notes)}".Trim());
             Logger.Write("Update", $"Downloading {release.SetupUrl}");
 
-            var setup = Path.Combine(Path.GetTempPath(), "X Bootstrapper Setup.exe");
-            await using (var remote = await Http.GetStreamAsync(release.SetupUrl, token))
-            await using (var file = File.Create(setup))
-                await remote.CopyToAsync(file, token);
+            var setup = Path.Combine(Path.GetTempPath(), $"X Bootstrapper Setup {release.Version}.exe");
+            try
+            {
+                await DownloadAsync(release.SetupUrl, setup, token);
+            }
+            catch
+            {
+                TryDelete(setup);
+                throw;
+            }
 
             var notice = string.IsNullOrWhiteSpace(Summarize(release.Notes))
                 ? $"Updated to {release.Version}."
@@ -153,6 +170,53 @@ internal static class AppUpdateService
             Gate.Release();
         }
     }
+
+    private static async Task DownloadAsync(string url, string destination, CancellationToken token)
+    {
+        using var stall = CancellationTokenSource.CreateLinkedTokenSource(token);
+        stall.CancelAfter(StallTimeout);
+        try
+        {
+            using var response = await DownloadClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, stall.Token);
+            response.EnsureSuccessStatusCode();
+            var total = response.Content.Headers.ContentLength;
+
+            await using var input = await response.Content.ReadAsStreamAsync(stall.Token);
+            await using var output = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true);
+            var buffer = new byte[81920];
+            long read = 0;
+            int count;
+            while ((count = await input.ReadAsync(buffer, stall.Token)) > 0)
+            {
+                stall.CancelAfter(StallTimeout);
+                await output.WriteAsync(buffer.AsMemory(0, count), stall.Token);
+                read += count;
+            }
+
+            if (total is long expected && read != expected)
+                throw new IOException($"The download ended early ({read} of {expected} bytes).");
+        }
+        catch (OperationCanceledException) when (!token.IsCancellationRequested)
+        {
+            throw new TimeoutException($"The download stalled for {StallTimeout.TotalSeconds:0} seconds.");
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch
+        {
+            /* ignore */
+        }
+    }
+
+    private static Version ParseOrZero(string version) =>
+        Version.TryParse(Normalize(version), out var parsed) ? parsed : new Version(0, 0);
 
     public static bool IsNewer(string remote, string local)
     {

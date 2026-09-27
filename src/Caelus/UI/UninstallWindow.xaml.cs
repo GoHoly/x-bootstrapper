@@ -9,6 +9,7 @@ public partial class UninstallWindow : Window
     public UninstallWindow(bool removeAllContents = false)
     {
         InitializeComponent();
+        Closed += (_, _) => App.RequestExitIfIdle();
         PlayfulMotion.Attach(this, SparkleLayer);
         DataBox.IsChecked = removeAllContents;
         if (removeAllContents)

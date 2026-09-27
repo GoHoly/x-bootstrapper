@@ -12,6 +12,7 @@ public partial class BootstrapperWindow : Window
     public BootstrapperWindow()
     {
         InitializeComponent();
+        Closed += (_, _) => App.RequestExitIfIdle();
         PlayfulMotion.Attach(this, SparkleLayer);
         if (PlayfulMotion.IsPlayful)
         {

@@ -389,26 +389,57 @@ public static class ModService
 
     public static int Apply(ClientInstall install, bool log = true)
     {
+        if (string.IsNullOrWhiteSpace(install.VersionDirectory) || !Directory.Exists(install.VersionDirectory))
+            return 0;
+
         MigrateLegacyCursor();
-        var copied = 0;
+
+        var desired = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (file, relative) in Enumerate())
         {
             if (!IsClientRelative(relative))
                 continue;
 
-            foreach (var destination in ClientDestinations(install.VersionDirectory, relative))
+            foreach (var destination in ClientDestinations(relative))
+                desired[destination] = file;
+        }
+
+        var store = ModBackupStore.Open(install.VersionDirectory);
+        var restored = 0;
+        foreach (var relative in store.Files.Keys.Where(key => !desired.ContainsKey(key)).ToList())
+        {
+            try
             {
-                try
-                {
-                    Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-                    CopyReplace(file, MatchExistingName(destination));
-                    copied++;
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    Logger.Write("Mods", $"Could not copy {relative}: {ex.Message}");
-                }
+                store.Restore(relative);
+                restored++;
             }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Logger.Write("Mods", $"Could not restore {relative}: {ex.Message}");
+            }
+        }
+
+        var copied = 0;
+        foreach (var (relative, source) in desired)
+        {
+            try
+            {
+                if (store.Apply(relative, source))
+                    copied++;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Logger.Write("Mods", $"Could not copy {relative}: {ex.Message}");
+            }
+        }
+
+        try
+        {
+            store.Save();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Logger.Write("Mods", $"Could not save the mod manifest: {ex.Message}");
         }
 
         try
@@ -421,9 +452,54 @@ public static class ModService
         }
 
         if (log)
-            Logger.Write("Mods", $"Applied {copied} file(s) to {install.VersionDirectory}");
+            Logger.Write("Mods", $"Applied {copied} changed file(s), restored {restored} original(s), {desired.Count} mod file(s) active in {install.VersionDirectory}");
 
         return copied;
+    }
+
+    /// <summary>Puts every original client file back (used by uninstall and "Restore originals").</summary>
+    public static int RestoreAllOriginals()
+    {
+        var restored = 0;
+        var versionDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var store in ModBackupStore.OpenAll().ToList())
+        {
+            versionDirs.Add(store.VersionDirectory);
+            restored += store.RestoreAll();
+            try
+            {
+                store.Save();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Logger.Write("Mods", $"Could not save the mod manifest: {ex.Message}");
+            }
+        }
+
+        foreach (var versionDir in versionDirs)
+        {
+            try
+            {
+                ImageSetHudPatcher.Restore(versionDir);
+            }
+            catch (Exception ex)
+            {
+                Logger.Write("Mods", $"Could not restore HUD atlas in {versionDir}: {ex.Message}");
+            }
+        }
+
+        Logger.Write("Mods", $"Restored {restored} original client file(s).");
+        return restored;
+    }
+
+    public static IReadOnlyList<string> AppliedFiles(ClientInstall? install)
+    {
+        if (install is null || string.IsNullOrWhiteSpace(install.VersionDirectory))
+            return Array.Empty<string>();
+
+        return ModBackupStore.Open(install.VersionDirectory).Files.Keys
+            .OrderBy(key => key, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     public static void OpenFolder()
@@ -472,29 +548,17 @@ public static class ModService
         relative.StartsWith("ExtraContent" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
         relative.StartsWith("PlatformContent" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
 
-    private static IEnumerable<string> ClientDestinations(string versionDirectory, string relative)
+    private static IEnumerable<string> ClientDestinations(string relative)
     {
-        yield return Path.Combine(versionDirectory, relative);
+        yield return relative;
 
         const string prefix = "content\\textures\\";
         if (relative.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
             relative.StartsWith("content/textures/", StringComparison.OrdinalIgnoreCase))
         {
             var rest = relative["content".Length..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            yield return Path.Combine(versionDirectory, "ExtraContent", rest);
+            yield return Path.Combine("ExtraContent", rest);
         }
-    }
-
-    private static string MatchExistingName(string destination)
-    {
-        var directory = Path.GetDirectoryName(destination);
-        var name = Path.GetFileName(destination);
-        if (directory is null || !Directory.Exists(directory))
-            return destination;
-
-        var existing = Directory.GetFiles(directory)
-            .FirstOrDefault(file => Path.GetFileName(file).Equals(name, StringComparison.OrdinalIgnoreCase));
-        return existing ?? destination;
     }
 
     private static string ResolveRelative(string relative)
@@ -524,28 +588,6 @@ public static class ModService
                 continue;
 
             yield return (file, relative);
-        }
-    }
-
-    private static void CopyReplace(string source, string destination)
-    {
-        for (var attempt = 0; attempt < 4; attempt++)
-        {
-            try
-            {
-                if (File.Exists(destination))
-                {
-                    File.SetAttributes(destination, FileAttributes.Normal);
-                    File.Delete(destination);
-                }
-
-                File.Copy(source, destination, overwrite: true);
-                return;
-            }
-            catch (IOException) when (attempt < 3)
-            {
-                Thread.Sleep(40);
-            }
         }
     }
 }

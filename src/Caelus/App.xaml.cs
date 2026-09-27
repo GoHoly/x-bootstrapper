@@ -16,6 +16,7 @@ public partial class App : System.Windows.Application
     public static bool SuppressSave { get; set; }
 
     private Mutex? _mutex;
+    private static bool _startupComplete;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -23,11 +24,70 @@ public partial class App : System.Windows.Application
 
         DispatcherUnhandledException += (_, args) =>
         {
-            Logger.Error("App", args.Exception);
-            System.Windows.MessageBox.Show(args.Exception.Message, AppInfo.Name, MessageBoxButton.OK, MessageBoxImage.Error);
             args.Handled = true;
+            Logger.Error("App", args.Exception);
+            try
+            {
+                System.Windows.MessageBox.Show(args.Exception.Message, AppInfo.Name, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch
+            {
+                /* nothing left to show it on */
+            }
+
+            // ShutdownMode is OnExplicitShutdown: never leave an invisible process behind.
+            if (!_startupComplete)
+                Shutdown(1);
+            else
+                RequestExitIfIdle();
         };
 
+        try
+        {
+            StartupCore(e);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("App", ex);
+            try
+            {
+                System.Windows.MessageBox.Show(ex.Message, AppInfo.Name, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch
+            {
+                /* ignore */
+            }
+
+            Shutdown(1);
+        }
+        finally
+        {
+            _startupComplete = true;
+        }
+    }
+
+    /// <summary>
+    /// Exits once no window is visible and nothing is running in the background. Every window calls
+    /// this when it closes, so closing the menu with Alt+F4 or from the taskbar can't strand a process.
+    /// </summary>
+    public static void RequestExitIfIdle()
+    {
+        var app = Current;
+        if (app is null)
+            return;
+
+        app.Dispatcher.BeginInvoke(() =>
+        {
+            if (app.Windows.OfType<Window>().Any(window => window.IsVisible))
+                return;
+            if (Watch is not null)
+                return;
+            app.Shutdown();
+        }, System.Windows.Threading.DispatcherPriority.Background);
+    }
+
+    private void StartupCore(StartupEventArgs e)
+    {
         Args = LaunchArgs.Parse(e.Args);
         Native.SetAppUserModelId();
         Paths.Initialize(InstallerService.PrepareInstallDirectory());
