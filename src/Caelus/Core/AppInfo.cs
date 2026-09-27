@@ -3,7 +3,7 @@ namespace Caelus.Core;
 public static class AppInfo
 {
     public const string Name = "X Bootstrapper";
-    public const string Version = "2.0.0";
+    public const string Version = "2.1.0";
     public const string Website = "https://octane.wtf";
     public const string Discord = "https://discord.com/invite/octanee";
     public const string ExeFileName = Name + ".exe";

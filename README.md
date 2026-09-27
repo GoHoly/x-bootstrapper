@@ -15,16 +15,27 @@ You need Octane installed from [octane.wtf](https://octane.wtf) first. X Bootstr
 
 ## Updates
 
-X Bootstrapper checks GitHub Releases for this repository when you open it. It installs new versions automatically, and you can turn that off. The Install tab lists every release, so you can stay on your current version or install an older one.
+X Bootstrapper checks GitHub Releases for this repository when you open it. It installs new versions automatically (never during a launch or while a game is running), and you can turn that off. Updates show a progress window you can cancel, and each download is checked against the SHA-256 digest GitHub publishes for the release asset. The Install tab lists every release, so you can stay on your current version or install an older one.
 
 ## Features
 
-- Handles `octane-player://` and `octane-studio://`, so **Play** on octane.wtf opens through X Bootstrapper
-- Optional `roblox-player://` handler
-- Mods, FastFlags and renderer presets, applied to the Octane 2021 client
+- Handles `octane-player://` and `octane-studio://`, so **Play** on octane.wtf opens through X Bootstrapper. The official launcher's handler is remembered and restored on uninstall
+- Mods: import a pack or single files, mod profiles, a list of applied files, and one-click restore of the client's original files (originals are backed up before they are replaced)
+- FastFlags: renderer/FPS presets plus an editable flag table with JSON import/export and flag profiles
+- Launch with the game: start your own programs with Octane and optionally close them when it exits
+- Tray icon while a game is running (Open settings, Open logs, Exit)
 - Launcher themes
-- Windows notifications when a game finishes loading and when a new launcher version is out
-- Discord Rich Presence over local IPC
+- Windows notifications when a game is starting and when a new launcher version is out
+- Discord Rich Presence over local IPC (see below)
+
+## Discord Rich Presence
+
+Discord only shows presence for a registered Discord application, and X Bootstrapper does not ship one. To use it:
+
+1. Create an application at <https://discord.com/developers/applications>. Its name is what your profile shows ("Playing ...").
+2. Copy its **Application ID** and paste it into **Integrations → Discord application ID**.
+
+With the field empty, X Bootstrapper doesn't contact Discord at all. With **Activity tracking** off, the place ID is not shown in presence or written to the logs.
 
 ## Build
 
@@ -42,14 +53,15 @@ To build the self-contained app and the installer:
 
 `publish.ps1` publishes a self-contained win-x64 build, then compiles `installer\XBootstrapper.iss` with [Inno Setup 6](https://jrsoftware.org/isinfo.php). It downloads Inno Setup if it can't find it. The installer is written to `dist\X Bootstrapper Setup.exe`.
 
-Releases are built by `.github/workflows/release.yml` when a `v*` tag is pushed. That workflow publishes a single-file exe, builds the installer and attaches `X.Bootstrapper.Setup.exe` to the GitHub release.
+Releases are built by `.github/workflows/release.yml` when a `v*` tag is pushed. That workflow publishes a single-file exe, builds the installer and attaches `X.Bootstrapper.Setup.exe` and `X.Bootstrapper.exe` to the GitHub release.
 
 ## Usage
 
 - The first run of a portable build opens the installer.
 - The Start Menu shortcut opens settings (`-menu`).
 - `-player` launches Octane. `-studio` launches Octane Studio.
-- A protocol link from octane.wtf is handed to the Octane 2021 client.
+- A protocol link from octane.wtf is handed to the official Octane launcher, which joins the game; X Bootstrapper applies your FastFlags and mods first.
+- Uninstalling never deletes the Octane client. Files your mods replaced are restored first.
 
 ## License
 
