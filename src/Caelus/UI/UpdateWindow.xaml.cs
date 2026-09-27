@@ -22,6 +22,14 @@ public partial class UpdateWindow : Window
         };
     }
 
+    /// <summary>Static preview for the screenshot mode (no download).</summary>
+    internal static UpdateWindow CreatePreview(string version)
+    {
+        var window = new UpdateWindow(version) { _finished = true };
+        window.Report(new DownloadProgress(31_000_000, 73_000_000, "Downloading… 29.6 of 69.6 MB"));
+        return window;
+    }
+
     /// <summary>
     /// Downloads and verifies the release, then hands over to the installer (which closes this app).
     /// Returns false when cancelled or when it failed (the error stays visible in the window).

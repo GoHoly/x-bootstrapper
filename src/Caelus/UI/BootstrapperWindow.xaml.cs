@@ -33,6 +33,11 @@ public partial class BootstrapperWindow : Window
     {
         PlayfulMotion.PopIn(Logo);
         PulseAccent();
+        if (UiShots.Active)
+        {
+            StatusText.Text = "Applying FastFlags and mods...";
+            return;
+        }
 
         var bootstrapper = new BootstrapperService(App.Settings.Prop, App.State.Prop, _args);
         bootstrapper.StatusChanged += status => Dispatcher.BeginInvoke(() =>

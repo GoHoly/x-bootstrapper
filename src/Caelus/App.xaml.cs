@@ -76,6 +76,9 @@ public partial class App : System.Windows.Application
         if (app is null)
             return;
 
+        if (UiShots.Active)
+            return;
+
         app.Dispatcher.BeginInvoke(() =>
         {
             if (app.Windows.OfType<Window>().Any(window => window.IsVisible))
@@ -114,6 +117,14 @@ public partial class App : System.Windows.Application
             Settings.Save();
 
         ThemeService.Apply(Settings.Prop.Theme);
+
+        // Developer screenshot mode (see UiShots): render the UI to PNGs and exit, nothing else runs.
+        var shots = Array.FindIndex(e.Args, arg => arg.Equals("-uishots", StringComparison.OrdinalIgnoreCase));
+        if (shots >= 0)
+        {
+            _ = UiShots.RunAsync(shots + 1 < e.Args.Length ? e.Args[shots + 1] : Path.Combine(Paths.Base, "ui-shots"));
+            return;
+        }
 
         try
         {
@@ -232,6 +243,9 @@ public partial class App : System.Windows.Application
 
     public static void Save()
     {
+        if (UiShots.Active)
+            return;
+
         Settings.Save();
         State.Save();
     }
