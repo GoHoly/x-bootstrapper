@@ -4,8 +4,12 @@ using Caelus.Models;
 
 namespace Caelus.Services;
 
+public sealed record LaunchResult(Process? Process, bool IsGame, ClientInstall Install);
+
 public sealed class BootstrapperService
 {
+    private static readonly TimeSpan ClientStartTimeout = TimeSpan.FromSeconds(45);
+
     private readonly Settings _settings;
     private readonly AppState _state;
     private readonly LaunchArgs _args;
@@ -20,12 +24,13 @@ public sealed class BootstrapperService
         _args = args;
     }
 
-    public async Task<Process?> RunAsync(CancellationToken token)
+    public async Task<LaunchResult> RunAsync(CancellationToken token)
     {
-        SetStatus("Connecting to Octane...");
+        SetStatus("Looking for Octane...");
         SetProgress(0, indeterminate: true);
 
-        ClientInstall? install = ClientLocator.Find(_settings, _state);
+        // File-system work runs off the UI thread so the launch window stays responsive.
+        var install = await Task.Run(() => ClientLocator.Find(_settings, _state), token);
         var payload = ProtocolPayload.TryParse(_args.ProtocolUri);
 
         if (_settings.CheckForClientUpdates && payload is null)
@@ -48,92 +53,91 @@ public sealed class BootstrapperService
                     SetStatus("Octane is up to date.");
                 }
             }
-            else
-            {
-                Logger.Write("Bootstrapper", "No public client manifest was reachable; using a local install if one exists.");
-            }
         }
 
-        install ??= ClientLocator.Find(_settings, _state);
         if (install is null)
             throw new InvalidOperationException(
                 "X Bootstrapper could not find an Octane client.\n\n" +
-                "Install the official Octane launcher once, or set a client folder / setup URL in Install settings.");
+                "Install the official Octane launcher from octane.wtf once, or set a client folder in Install settings.");
 
-        ApplyOverrides(install, log: true, mods: true);
+        SetStatus("Applying FastFlags and mods...");
+        await Task.Run(() => ApplyOverrides(install, log: true, mods: true), token);
 
         if (_settings.RegisterWebsiteProtocol)
-            ProtocolService.Register(_settings);
+            await Task.Run(() => ProtocolService.Register(_settings, _state), token);
 
-        SetStatus("Starting Octane...");
-        var process = await LaunchAsync(install, token);
+        SetStatus(_args.Mode == LaunchMode.Studio ? "Starting Octane Studio..." : "Starting Octane...");
+        var result = await LaunchAsync(install, token);
 
         _state.PlayerVersionGuid = install.VersionGuid;
         _state.PlayerExecutable = install.PlayerExecutable;
         _state.StudioExecutable = install.StudioExecutable;
         _state.LastLaunched = DateTime.Now;
 
-        Logger.Write("Bootstrapper", $"Launched {Describe(process)}");
-        return process;
+        Logger.Write("Bootstrapper", result.Process is null ? "Launch handed off" : $"Launched {Describe(result.Process)}");
+        return result;
     }
 
-    private async Task<Process> LaunchAsync(ClientInstall install, CancellationToken token)
+    private async Task<LaunchResult> LaunchAsync(ClientInstall install, CancellationToken token)
     {
-        // OctanePlayer does not accept octane-player: / caelus-launcher: URIs directly (mirrors the
-        // same quirk prior revival had - error 610). The official Octane launcher turns the website
-        // Play link into a real join, so we hand off to OctanePlayerLauncher.exe the same way.
+        var studio = _args.Mode == LaunchMode.Studio;
+        var watchNames = studio ? ClientLocator.StudioProcessNames : ClientLocator.PlayerProcessNames;
+        var alreadyRunning = ClientLocator.RunningIds(watchNames);
+
         if (!string.IsNullOrWhiteSpace(_args.ProtocolUri))
         {
-            if (!string.IsNullOrWhiteSpace(install.LauncherExecutable) && File.Exists(install.LauncherExecutable))
+            // OctanePlayer does not accept octane-player: URIs directly (error 610). The official
+            // launcher turns the website link into a join, so the link goes to the official handler
+            // for its scheme (octane-player -> player, octane-studio -> Studio).
+            var scheme = _args.TargetScheme ?? "octane-player";
+            var uri = _args.ToLaunchUri();
+            var handler = ProtocolService.OfficialHandler(scheme, uri, install, _state);
+            if (handler is null)
+                throw new InvalidOperationException(
+                    "OctanePlayerLauncher.exe is missing, so the website link cannot be turned into a join.\n\n" +
+                    "Install the official Octane launcher once, then try again.");
+
+            Logger.Write("Bootstrapper", $"Handing the {scheme} link to {Path.GetFileName(handler.Value.Exe)}.");
+            var launcher = StartProcess(handler.Value.Exe, start => start.Arguments = handler.Value.Arguments);
+
+            SetStatus(studio ? "Waiting for Octane Studio..." : "Waiting for Octane...");
+            var game = await ClientLocator.WaitForNewProcessAsync(watchNames, alreadyRunning, ClientStartTimeout, token);
+            if (game is null)
             {
-                var join = _args.ToPlayerArgument();
-                Logger.Write("Bootstrapper", "Handing the join URI to OctanePlayerLauncher.");
-                var launcher = StartProcess(install.LauncherExecutable, start => start.ArgumentList.Add(join));
-                var player = await WaitForPlayerAsync(token);
-                return player ?? launcher;
+                Logger.Write("Bootstrapper", $"No new {(studio ? "Studio" : "player")} process appeared after the handoff.");
+                return new LaunchResult(launcher, false, install);
             }
 
-            throw new InvalidOperationException(
-                "OctanePlayerLauncher.exe is missing, so the website Play link cannot be turned into a join.\n\n" +
-                "Install the official Octane launcher once, then try Play again.");
+            launcher.Dispose();
+            if (!studio)
+                await Task.Run(() => ApplyToRunningPlayer(game), token);
+            return new LaunchResult(game, true, install);
         }
 
-        var exe = _args.Mode == LaunchMode.Studio
-            ? install.StudioExecutable ?? install.PlayerExecutable
+        var exe = studio
+            ? install.StudioExecutable ?? throw new InvalidOperationException("Octane Studio was not found next to the client.")
             : install.PlayerExecutable;
 
-        return StartProcess(exe, _ => { });
+        var process = StartProcess(exe, _ => { });
+        return new LaunchResult(process, true, install);
     }
 
-    private async Task<Process?> WaitForPlayerAsync(CancellationToken token)
+    /// <summary>
+    /// The official launcher can rewrite ClientSettings as it starts the player, so write the flags
+    /// once more after the player shows up (once, not in a loop).
+    /// </summary>
+    private void ApplyToRunningPlayer(Process player)
     {
-        for (var i = 0; i < 300; i++)
+        try
         {
-            token.ThrowIfCancellationRequested();
-            try
-            {
-                FastFlagService.ApplyAll(_settings, _state, ClientLocator.Find(_settings, _state), log: false);
-            }
-            catch (Exception ex)
-            {
-                Logger.Write("Bootstrapper", $"Could not apply FastFlags while waiting: {ex.Message}");
-            }
-
-            var player = ClientLocator.FindRunningPlayer();
-            if (player is not null)
-            {
-                Logger.Write("Bootstrapper", $"OctanePlayer is running ({player.Id})");
-                var target = ClientLocator.FromPlayerProcess(player) ?? ClientLocator.Find(_settings, _state);
-                if (target is not null)
-                    FastFlagService.ApplyAll(_settings, _state, target, log: true);
-                return player;
-            }
-
-            await Task.Delay(50, token);
+            Logger.Write("Bootstrapper", $"OctanePlayer is running ({player.Id})");
+            var target = ClientLocator.FromPlayerProcess(player) ?? ClientLocator.Find(_settings, _state);
+            FastFlagService.ApplyAll(_settings, _state, target, log: true);
         }
-
-        Logger.Write("Bootstrapper", "OctanePlayer did not appear after OctanePlayerLauncher started.");
-        return null;
+        catch (Exception ex)
+        {
+            Logger.Write("Bootstrapper", $"Could not re-apply FastFlags: {ex.Message}");
+        }
     }
 
     private void ApplyOverrides(ClientInstall install, bool log, bool mods)
@@ -141,12 +145,22 @@ public sealed class BootstrapperService
         try
         {
             FastFlagService.ApplyAll(_settings, _state, install, log);
-            if (mods)
-                ModService.Apply(install, log);
         }
         catch (Exception ex)
         {
-            Logger.Write("Bootstrapper", $"Could not apply overrides: {ex.Message}");
+            Logger.Write("Bootstrapper", $"Could not apply FastFlags: {ex.Message}");
+        }
+
+        if (!mods)
+            return;
+
+        try
+        {
+            ModService.Apply(install, log);
+        }
+        catch (Exception ex)
+        {
+            Logger.Write("Bootstrapper", $"Could not apply mods: {ex.Message}");
         }
     }
 

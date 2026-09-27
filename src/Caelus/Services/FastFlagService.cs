@@ -62,7 +62,8 @@ public static class FastFlagService
         flags.Remove("FFlagDebugGraphicsDisableDirect3D11");
         flags.Remove("FFlagDebugGraphicsDisableD3D11");
 
-        if (settings.DisablePostFx || settings.PerformanceMode)
+        // Each checkbox decides for itself; Performance mode only ticks them when you turn it on.
+        if (settings.DisablePostFx)
             flags["FFlagDisablePostFx"] = "True";
 
         if (settings.TextureQuality >= 0)
@@ -71,7 +72,7 @@ public static class FastFlagService
             flags["DFIntTextureQualityOverride"] = settings.TextureQuality.ToString();
         }
 
-        if (settings.ShowFpsCounter || settings.PerformanceMode)
+        if (settings.ShowFpsCounter)
         {
             flags["FFlagDebugDisplayFPS"] = "True";
             flags["DFFlagDebugDisplayFPS"] = "True";
@@ -79,9 +80,6 @@ public static class FastFlagService
 
         if (settings.PerformanceMode)
         {
-            if (settings.FramerateLimit == 0)
-                flags["DFIntTaskSchedulerTargetFps"] = "9999";
-
             flags["FFlagTaskSchedulerLimitTargetFpsTo2402"] = "False";
             flags["FFlagTaskSchedulerLimitTargetFpsTo240"] = "False";
             flags["FIntRenderLocalLightUpdatesMax"] = "1";
@@ -132,29 +130,44 @@ public static class FastFlagService
         return changed;
     }
 
+    private static readonly object WriteGate = new();
+
     public static void ApplyAll(Settings settings, AppState state, ClientInstall? primary, bool log = true)
     {
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var install in ClientLocator.FindAll(settings, state, primary))
+        lock (WriteGate)
         {
-            if (string.IsNullOrWhiteSpace(install.VersionDirectory) || !seen.Add(install.VersionDirectory))
-                continue;
-            Apply(install, settings, log && seen.Count == 1);
+            var flags = Build(settings);
+            // Keys we wrote last time but that are no longer wanted get removed from the file.
+            var stale = new HashSet<string>(ManagedKeys, StringComparer.OrdinalIgnoreCase);
+            foreach (var key in state.WrittenFlagKeys ?? new List<string>())
+                stale.Add(key);
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var written = 0;
+            foreach (var install in ClientLocator.FindAll(settings, state, primary))
+            {
+                if (string.IsNullOrWhiteSpace(install.VersionDirectory) || !seen.Add(install.VersionDirectory))
+                    continue;
+                written += Apply(install, flags, stale, log && seen.Count == 1);
+            }
+
+            if (written > 0)
+                state.WrittenFlagKeys = flags.Keys.OrderBy(key => key, StringComparer.OrdinalIgnoreCase).ToList();
         }
     }
 
-    public static void Apply(ClientInstall install, Settings settings, bool log = true)
+    private static int Apply(ClientInstall install, Dictionary<string, string> flags, ISet<string> stale, bool log)
     {
-        var flags = Build(settings);
         var written = 0;
         foreach (var path in SettingFiles(install))
         {
-            if (WriteFile(path, flags))
+            if (WriteFile(path, flags, stale))
                 written++;
         }
 
         if (log)
             Logger.Write("FastFlags", $"Wrote {flags.Count} flag(s) to {written} ClientAppSettings.json file(s) under {install.VersionDirectory}");
+        return written;
     }
 
     private static void SetRendererPreference(Dictionary<string, string> flags, bool d3d11 = false, bool vulkan = false, bool openGl = false)
@@ -213,7 +226,7 @@ public static class FastFlagService
         }
     }
 
-    private static bool WriteFile(string path, Dictionary<string, string> flags)
+    private static bool WriteFile(string path, Dictionary<string, string> flags, ISet<string> stale)
     {
         var directory = Path.GetDirectoryName(path);
         if (!IsSafeClientFolder(directory))
@@ -243,7 +256,7 @@ public static class FastFlagService
                 root = new JsonObject();
             }
 
-            foreach (var key in ManagedKeys)
+            foreach (var key in stale)
             {
                 if (!flags.ContainsKey(key))
                     root.Remove(key);
@@ -252,7 +265,14 @@ public static class FastFlagService
             foreach (var (key, value) in flags)
                 root[key] = JsonValue.Create(ToFlagString(value));
 
-            File.WriteAllText(path, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            var json = root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+            if (File.Exists(path) && File.ReadAllText(path) == json)
+                return true;
+
+            // Write a temp file and move it into place so the client never reads a half-written file.
+            var temp = path + ".tmp";
+            File.WriteAllText(temp, json, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            File.Move(temp, path, overwrite: true);
             return true;
         }
         catch (Exception ex)

@@ -173,7 +173,10 @@ internal static class ImageSetHudPatcher
                 continue;
 
             if (Paint(orig, dest, sprites))
+            {
                 painted += sprites.Count;
+                RecordPainted(origDir, dest);
+            }
         }
 
         try
@@ -273,14 +276,72 @@ internal static class ImageSetHudPatcher
         return copy;
     }
 
+    private const string PaintedManifest = "painted.json";
+
+    /// <summary>
+    /// Backs up the stock sheets. If a sheet on disk matches neither the backup nor what we painted
+    /// last time, the client replaced it (update/repair), so the backup is refreshed from it.
+    /// </summary>
     private static void EnsureOriginals(string atlasDir, string origDir)
     {
         Directory.CreateDirectory(origDir);
+        var paintedHashes = ReadPainted(origDir);
         foreach (var file in Directory.GetFiles(atlasDir, "img_set_*.png"))
         {
-            var backup = Path.Combine(origDir, Path.GetFileName(file));
+            var name = Path.GetFileName(file);
+            var backup = Path.Combine(origDir, name);
             if (!File.Exists(backup))
+            {
                 File.Copy(file, backup);
+                continue;
+            }
+
+            try
+            {
+                var current = ModBackupStore.Hash(file);
+                if (current == ModBackupStore.Hash(backup))
+                    continue;
+                if (paintedHashes.TryGetValue(name, out var ours) && ours == current)
+                    continue;
+
+                File.Copy(file, backup, overwrite: true);
+                Logger.Write("Mods", $"{name} was updated by the client; refreshed its backup.");
+            }
+            catch (IOException)
+            {
+                /* sheet in use; try again next launch */
+            }
+        }
+    }
+
+    private static Dictionary<string, string> ReadPainted(string origDir)
+    {
+        try
+        {
+            var path = Path.Combine(origDir, PaintedManifest);
+            if (File.Exists(path))
+                return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(path))
+                       ?? new Dictionary<string, string>();
+        }
+        catch
+        {
+            /* treat as empty */
+        }
+
+        return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static void RecordPainted(string origDir, string paintedFile)
+    {
+        try
+        {
+            var map = ReadPainted(origDir);
+            map[Path.GetFileName(paintedFile)] = ModBackupStore.Hash(paintedFile);
+            File.WriteAllText(Path.Combine(origDir, PaintedManifest), System.Text.Json.JsonSerializer.Serialize(map));
+        }
+        catch
+        {
+            /* not critical */
         }
     }
 
@@ -300,6 +361,17 @@ internal static class ImageSetHudPatcher
             {
                 /* game may have the sheet open */
             }
+        }
+
+        try
+        {
+            var manifest = Path.Combine(origDir, PaintedManifest);
+            if (File.Exists(manifest))
+                File.Delete(manifest);
+        }
+        catch (IOException)
+        {
+            /* ignore */
         }
     }
 

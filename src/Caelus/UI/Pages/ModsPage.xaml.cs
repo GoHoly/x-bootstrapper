@@ -119,9 +119,12 @@ public partial class ModsPage : System.Windows.Controls.UserControl
         if (sender is not System.Windows.Controls.Button { Tag: ModSlot slot })
             return;
 
-        ModService.ClearSlot(slot);
-        RebuildSlots();
-        RefreshStatus();
+        Run("Could not remove that mod.", () =>
+        {
+            ModService.ClearSlot(slot);
+            RebuildSlots();
+            RefreshStatus();
+        });
     }
 
     private void ImportFolder_Click(object sender, RoutedEventArgs e)

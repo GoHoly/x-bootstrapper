@@ -4,23 +4,25 @@ namespace Caelus.Services;
 
 public static class ModPackImporter
 {
+    /// <summary>
+    /// The pack root is the selected folder or something inside it, never a parent folder: walking
+    /// upward could make an unrelated folder (e.g. your profile) the thing that gets imported.
+    /// </summary>
     public static string FindRoot(string selected)
     {
-        var current = new DirectoryInfo(Path.GetFullPath(selected));
-        for (var dir = current; dir is not null; dir = dir.Parent)
-        {
-            if (Directory.Exists(Path.Combine(dir.FullName, "content")))
-                return dir.FullName;
-            if (dir.Name.Equals("content", StringComparison.OrdinalIgnoreCase) && dir.Parent is not null)
-                return dir.Parent.FullName;
-        }
+        var full = Path.GetFullPath(selected);
+        if (Directory.Exists(Path.Combine(full, "content")))
+            return full;
 
-        var nested = Directory.EnumerateDirectories(selected, "content", SearchOption.AllDirectories)
+        if (new DirectoryInfo(full).Name.Equals("content", StringComparison.OrdinalIgnoreCase))
+            return full;
+
+        var nested = Directory.EnumerateDirectories(full, "content", SearchOption.AllDirectories)
             .FirstOrDefault();
         if (nested is not null)
             return Directory.GetParent(nested)!.FullName;
 
-        return Path.GetFullPath(selected);
+        return full;
     }
 
     public static IEnumerable<string> DirectDestinations(string relative)

@@ -80,6 +80,9 @@ public static class WindowsAppRegistration
         try
         {
             var ini = Path.Combine(Paths.Base, "desktop.ini");
+            // An existing Hidden/System desktop.ini can't be overwritten until those attributes are cleared.
+            if (File.Exists(ini))
+                File.SetAttributes(ini, FileAttributes.Normal);
             File.WriteAllText(ini, $"[.ShellClassInfo]\r\nIconResource={exe},0\r\nInfoTip={AppInfo.Name}\r\n");
             File.SetAttributes(ini, FileAttributes.Hidden | FileAttributes.System);
             File.SetAttributes(Paths.Base, File.GetAttributes(Paths.Base) | FileAttributes.System);

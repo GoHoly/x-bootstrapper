@@ -159,7 +159,12 @@ internal static class AppUpdateService
                 ? $"Updated to {release.Version}."
                 : $"Updated to {release.Version}. {Summarize(release.Notes)}";
             App.State.Prop.PendingUpdateNotice = notice;
-            App.State.Prop.SkippedAppVersion = null;
+            // Installing an older build on purpose: skip the newest release so auto-update
+            // does not immediately undo the downgrade. Installing the newest clears the skip.
+            var latest = _cache is null ? null : LatestStable(_cache);
+            App.State.Prop.SkippedAppVersion = latest is not null && IsNewer(latest.Version, release.Version)
+                ? latest.Version
+                : null;
             App.Save();
 
             RestartThroughInstaller(setup, args);
@@ -319,7 +324,13 @@ internal static class AppUpdateService
         return string.Join(' ', parts);
     }
 
-    private static string Normalize(string version) => version.Trim().TrimStart('v', 'V');
+    // "v2.0.1-hotfix" / "2.1.0+build" compare as 2.0.1 / 2.1.0.
+    private static string Normalize(string version)
+    {
+        var trimmed = version.Trim().TrimStart('v', 'V');
+        var cut = trimmed.IndexOfAny(new[] { '-', '+', ' ' });
+        return cut > 0 ? trimmed[..cut] : trimmed;
+    }
 }
 
 internal sealed record AppRelease(

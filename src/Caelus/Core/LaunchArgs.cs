@@ -31,9 +31,8 @@ public sealed class LaunchArgs
             if (IsProtocol(arg))
             {
                 parsed.ProtocolUri = arg;
-                parsed.Mode = arg.Contains("studio", StringComparison.OrdinalIgnoreCase)
-                    ? LaunchMode.Studio
-                    : LaunchMode.Player;
+                // Decide from the scheme only; the payload itself can contain any text.
+                parsed.Mode = IsStudioScheme(SchemeOf(arg)) ? LaunchMode.Studio : LaunchMode.Player;
                 continue;
             }
 
@@ -84,31 +83,58 @@ public sealed class LaunchArgs
         return parsed;
     }
 
-    public static bool IsProtocol(string arg)
+    // Schemes the Octane website uses, plus legacy ones older installs registered.
+    private static readonly Dictionary<string, string> SchemeMap = new(StringComparer.OrdinalIgnoreCase)
     {
-        return arg.StartsWith("caelus-launcher:", StringComparison.OrdinalIgnoreCase) ||
-               arg.StartsWith("roblox-player:", StringComparison.OrdinalIgnoreCase) ||
-               arg.StartsWith("roblox:", StringComparison.OrdinalIgnoreCase) ||
-               arg.StartsWith("octane-player:", StringComparison.OrdinalIgnoreCase) ||
-               arg.StartsWith("caelus-player:", StringComparison.OrdinalIgnoreCase) ||
-               arg.StartsWith("octane-studio:", StringComparison.OrdinalIgnoreCase) ||
-               arg.StartsWith("caelus-studio:", StringComparison.OrdinalIgnoreCase) ||
-               arg.StartsWith("roblox-studio:", StringComparison.OrdinalIgnoreCase);
+        ["octane-player"] = "octane-player",
+        ["octane-studio"] = "octane-studio",
+        ["caelus-launcher"] = "octane-player",
+        ["caelus-player"] = "octane-player",
+        ["caelus-studio"] = "octane-studio",
+        ["roblox-player"] = "octane-player",
+        ["roblox"] = "octane-player",
+        ["roblox-studio"] = "octane-studio"
+    };
+
+    public static string? SchemeOf(string? arg)
+    {
+        if (string.IsNullOrWhiteSpace(arg))
+            return null;
+        var colon = arg.IndexOf(':');
+        return colon > 0 ? arg[..colon] : null;
     }
 
-    public string ToPlayerArgument()
+    public static bool IsProtocol(string arg)
+    {
+        var scheme = SchemeOf(arg);
+        return scheme is not null && SchemeMap.ContainsKey(scheme);
+    }
+
+    public static bool IsStudioScheme(string? scheme) =>
+        scheme is not null && SchemeMap.TryGetValue(scheme, out var target) && target == "octane-studio";
+
+    /// <summary>The Octane scheme this link maps to (octane-player or octane-studio).</summary>
+    public string? TargetScheme
+    {
+        get
+        {
+            var scheme = SchemeOf(ProtocolUri);
+            return scheme is not null && SchemeMap.TryGetValue(scheme, out var target) ? target : null;
+        }
+    }
+
+    /// <summary>The link rewritten onto the Octane scheme the official launcher understands.</summary>
+    public string ToLaunchUri()
     {
         if (string.IsNullOrWhiteSpace(ProtocolUri))
             return "";
 
-        var uri = ProtocolUri;
-        foreach (var scheme in new[] { "caelus-launcher:", "caelus-player:" })
-        {
-            if (uri.StartsWith(scheme, StringComparison.OrdinalIgnoreCase))
-                return "octane-player:" + uri[scheme.Length..];
-        }
+        var scheme = SchemeOf(ProtocolUri);
+        var target = TargetScheme;
+        if (scheme is null || target is null || scheme.Equals(target, StringComparison.OrdinalIgnoreCase))
+            return ProtocolUri;
 
-        return uri;
+        return target + ProtocolUri[scheme.Length..];
     }
 
     public string? ExtractPlaceId()

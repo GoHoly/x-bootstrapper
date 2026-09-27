@@ -7,14 +7,19 @@ public static class ShortcutService
     private static string BrandShortcut => AppInfo.Name + ".lnk";
     private const string LegacyShortcut = "Caelus.lnk";
 
-    public static void CreateAll() => Publish();
-
-    public static void Publish()
+    /// <summary>
+    /// Creates the Start Menu and desktop shortcuts when <paramref name="createMissing"/> is true
+    /// (first install). On normal starts only shortcuts that already exist are refreshed, so a
+    /// shortcut you deleted or never wanted is not recreated.
+    /// </summary>
+    public static void Publish(bool createMissing = false)
     {
-        Directory.CreateDirectory(Paths.StartMenu);
-        Create(Path.Combine(Paths.StartMenu, BrandShortcut), Paths.Executable, "-menu", AppInfo.Name);
-        Create(Path.Combine(Paths.StartMenu, "Octane.lnk"), Paths.Executable, "-player", "Launch Octane");
-        Create(Path.Combine(Paths.Desktop, BrandShortcut), Paths.Executable, "-menu", AppInfo.Name);
+        if (createMissing)
+            Directory.CreateDirectory(Paths.StartMenu);
+
+        Refresh(Path.Combine(Paths.StartMenu, BrandShortcut), "-menu", AppInfo.Name, createMissing);
+        Refresh(Path.Combine(Paths.StartMenu, "Octane.lnk"), "-player", "Launch Octane", createMissing);
+        Refresh(Path.Combine(Paths.Desktop, BrandShortcut), "-menu", AppInfo.Name, createMissing);
 
         foreach (var leftover in new[]
         {
@@ -29,7 +34,11 @@ public static class ShortcutService
         TryDeleteDirectory(Paths.PreviousStartMenu);
     }
 
-    public static void MigrateLegacy() => Publish();
+    private static void Refresh(string path, string arguments, string description, bool createMissing)
+    {
+        if (createMissing || File.Exists(path))
+            Create(path, Paths.Executable, arguments, description);
+    }
 
     public static void RemoveAll()
     {

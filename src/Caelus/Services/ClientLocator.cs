@@ -57,6 +57,11 @@ public static class ClientLocator
 
     public static ClientInstall? Find(Settings settings, AppState state)
     {
+        // A custom client folder is an override, not just one more candidate.
+        var custom = FromCustomDirectory(settings);
+        if (custom is not null)
+            return custom;
+
         ClientInstall? best = null;
         var bestWrite = DateTime.MinValue;
 
@@ -122,6 +127,10 @@ public static class ClientLocator
         if (primary is not null)
             yield return primary;
 
+        var custom = FromCustomDirectory(settings, log: false);
+        if (custom is not null)
+            yield return custom;
+
         foreach (var root in CandidateRoots(settings).Distinct(StringComparer.OrdinalIgnoreCase))
         {
             foreach (var install in FindPlayersInRoot(root))
@@ -137,15 +146,96 @@ public static class ClientLocator
         return PlayerNames.Any(player => player.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
 
-    public static Process? FindRunningPlayer()
+    public static readonly string[] PlayerProcessNames = { "OctanePlayer", "OctanePlayerBeta", "CaelusPlayerBeta" };
+    public static readonly string[] StudioProcessNames = { "RobloxStudioBeta", "OctaneStudioBeta", "CaelusStudioBeta" };
+
+    public static HashSet<int> RunningIds(IEnumerable<string> processNames)
     {
-        foreach (var name in new[] { "OctanePlayer", "OctanePlayerBeta", "RobloxPlayer", "CaelusPlayerBeta" })
+        var ids = new HashSet<int>();
+        foreach (var name in processNames)
         {
-            var process = Process.GetProcessesByName(name).FirstOrDefault();
-            if (process is not null)
-                return process;
+            foreach (var process in Process.GetProcessesByName(name))
+            {
+                ids.Add(process.Id);
+                process.Dispose();
+            }
         }
 
+        return ids;
+    }
+
+    /// <summary>Waits for a client process that was not already running before the launch.</summary>
+    public static async Task<Process?> WaitForNewProcessAsync(IEnumerable<string> processNames, ISet<int> alreadyRunning, TimeSpan timeout, CancellationToken token)
+    {
+        var names = processNames.ToArray();
+        var deadline = DateTime.UtcNow + timeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            token.ThrowIfCancellationRequested();
+            foreach (var name in names)
+            {
+                foreach (var process in Process.GetProcessesByName(name))
+                {
+                    if (!alreadyRunning.Contains(process.Id))
+                        return process;
+                    process.Dispose();
+                }
+            }
+
+            await Task.Delay(250, token);
+        }
+
+        return null;
+    }
+
+    private static ClientInstall? FromCustomDirectory(Settings settings, bool log = true)
+    {
+        var dir = settings.ClientDirectory?.Trim().Trim('"');
+        if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir) || !FastFlagService.IsSafeClientFolder(dir))
+            return null;
+
+        try
+        {
+            // The folder that holds OctanePlayer.exe directly (e.g. ...\clients\2021).
+            var player = FindFile(dir, PlayerNames);
+            if (player is not null)
+            {
+                var versionDir = Path.GetFullPath(dir);
+                var parent = Directory.GetParent(versionDir);
+                var root = parent?.Name.Equals("clients", StringComparison.OrdinalIgnoreCase) == true
+                    ? parent.Parent?.FullName ?? parent.FullName
+                    : parent?.FullName ?? versionDir;
+                return new ClientInstall
+                {
+                    Root = root,
+                    VersionDirectory = versionDir,
+                    PlayerExecutable = player,
+                    StudioExecutable = FindStudioForYear(root, Path.GetFileName(versionDir)),
+                    LauncherExecutable = FindFile(root, LauncherNames) ?? FindFile(versionDir, LauncherNames) ?? FindExistingLauncher(),
+                    VersionGuid = Path.GetFileName(versionDir)
+                };
+            }
+
+            // An Octane root (clients\<year>) or a legacy Versions layout.
+            var fromRoot = FindPlayersInRoot(dir).FirstOrDefault();
+            if (fromRoot is not null)
+                return fromRoot;
+
+            // A "clients" folder: look one level down.
+            foreach (var child in Directory.GetDirectories(dir))
+            {
+                var childPlayer = FindFile(child, PlayerNames);
+                if (childPlayer is not null)
+                    return FromCustomDirectory(new Settings { ClientDirectory = child });
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Logger.Write("ClientLocator", $"Could not read the custom client folder: {ex.Message}");
+        }
+
+        if (log)
+            Logger.Write("ClientLocator", $"No Octane client was found in the custom folder {dir}; auto-detecting instead.");
         return null;
     }
 
@@ -342,7 +432,7 @@ public static class ClientLocator
     private static string? Existing(string? path) =>
         !string.IsNullOrWhiteSpace(path) && File.Exists(path) ? path : null;
 
-    private static string? FindExistingLauncher()
+    internal static string? FindExistingLauncher()
     {
         foreach (var root in new[]
                  {

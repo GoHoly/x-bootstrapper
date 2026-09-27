@@ -80,4 +80,8 @@ public sealed class AppState
     public string? LastNotifiedAppVersion { get; set; }
     public string? SkippedAppVersion { get; set; }
     public string? PendingUpdateNotice { get; set; }
+    // Official handler commands (e.g. OctanePlayerLauncher.exe) seen before X Bootstrapper took a scheme over.
+    public Dictionary<string, string> OfficialProtocolHandlers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    // FastFlag keys X Bootstrapper wrote last time, so flags you delete are removed from the client too.
+    public List<string> WrittenFlagKeys { get; set; } = new();
 }

@@ -12,7 +12,7 @@ public partial class App : System.Windows.Application
     public static JsonStore<AppState> State { get; private set; } = null!;
     public static LaunchArgs Args { get; private set; } = new();
     public static DiscordService? Discord { get; set; }
-    public static ProcessWatch? Watch { get; set; }
+    public static GameSession? Session { get; private set; }
     public static bool SuppressSave { get; set; }
 
     private Mutex? _mutex;
@@ -80,7 +80,7 @@ public partial class App : System.Windows.Application
         {
             if (app.Windows.OfType<Window>().Any(window => window.IsVisible))
                 return;
-            if (Watch is not null)
+            if (Session is not null)
                 return;
             app.Shutdown();
         }, System.Windows.Threading.DispatcherPriority.Background);
@@ -140,7 +140,10 @@ public partial class App : System.Windows.Application
         {
             try
             {
-                if (!string.IsNullOrWhiteSpace(Environment.ProcessPath))
+                // Only refresh the installed copy from a newer build (never downgrade it from an old
+                // Desktop copy or a stale download).
+                if (!string.IsNullOrWhiteSpace(Environment.ProcessPath) &&
+                    InstallerService.ShouldRefreshPayload(Environment.ProcessPath, Paths.Executable))
                     InstallerService.CopyPayload(Environment.ProcessPath, Paths.Executable);
                 InstallerService.EnsureInstallCasing();
                 InstallerService.StripLegacyBinaries(Paths.Base);
@@ -149,7 +152,7 @@ public partial class App : System.Windows.Application
                 ShortcutService.Publish();
                 WindowsAppRegistration.Register();
                 if (Settings.Prop.RegisterWebsiteProtocol)
-                    ProtocolService.Register(Settings.Prop);
+                    ProtocolService.Register(Settings.Prop, State.Prop);
                 Native.NotifyShell();
             }
             catch (Exception ex)
@@ -198,18 +201,17 @@ public partial class App : System.Windows.Application
 
         if (Args.Mode is LaunchMode.Player or LaunchMode.Studio)
         {
-            new BootstrapperWindow().Show();
+            new BootstrapperWindow(Args).Show();
             return;
         }
 
-        _mutex = new Mutex(true, "XBootstrapperMenu", out var created);
-        if (!created)
+        ShowMenu();
+        if (_mutex is null)
         {
+            // Another process already has the menu open and was asked to show it.
             Shutdown();
             return;
         }
-
-        new MenuWindow().Show();
 
         if (!Args.SkipUpdate)
             _ = AppUpdateService.CheckInBackgroundAsync(Args);
@@ -273,14 +275,128 @@ public partial class App : System.Windows.Application
         return changed;
     }
 
-        public static void LaunchOctane(LaunchMode mode = LaunchMode.Player)
+    public static void LaunchOctane(LaunchMode mode = LaunchMode.Player)
     {
-        Args = new LaunchArgs { Mode = mode };
-        new BootstrapperWindow().Show();
+        new BootstrapperWindow(new LaunchArgs { Mode = mode }).Show();
+    }
+
+    private const string MenuMutexName = "XBootstrapperMenu";
+    private const string MenuShowEventName = "XBootstrapperMenu.Show";
+
+    /// <summary>
+    /// Opens the settings menu. Only one menu exists across processes: if another process already
+    /// has it, that window is brought to the front instead.
+    /// </summary>
+    public static void ShowMenu()
+    {
+        var app = (App)Current;
+        if (app._mutex is null)
+        {
+            var mutex = new Mutex(true, MenuMutexName, out var created);
+            if (!created)
+            {
+                mutex.Dispose();
+                SignalExistingMenu();
+                return;
+            }
+
+            app._mutex = mutex;
+            app.ListenForMenuRequests();
+        }
+
+        var existing = Current.Windows.OfType<MenuWindow>().FirstOrDefault();
+        if (existing is not null)
+        {
+            existing.Show();
+            if (existing.WindowState == WindowState.Minimized)
+                existing.WindowState = WindowState.Normal;
+            existing.Activate();
+            return;
+        }
+
+        new MenuWindow().Show();
+    }
+
+    private static void SignalExistingMenu()
+    {
+        try
+        {
+            if (EventWaitHandle.TryOpenExisting(MenuShowEventName, out var handle))
+            {
+                using (handle)
+                    handle.Set();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Write("App", $"Could not reach the open menu: {ex.Message}");
+        }
+    }
+
+    private void ListenForMenuRequests()
+    {
+        try
+        {
+            var handle = new EventWaitHandle(false, EventResetMode.AutoReset, MenuShowEventName);
+            var thread = new Thread(() =>
+            {
+                while (true)
+                {
+                    handle.WaitOne();
+                    Dispatcher.BeginInvoke(ShowMenu);
+                }
+            })
+            {
+                IsBackground = true,
+                Name = "MenuShowListener"
+            };
+            thread.Start();
+        }
+        catch (Exception ex)
+        {
+            Logger.Write("App", $"Menu listener unavailable: {ex.Message}");
+        }
+    }
+
+    /// <summary>Keeps the process alive in the background until the launched client closes.</summary>
+    public static void StartSession(GameSession session)
+    {
+        EndSession();
+        Session = session;
+        session.Ended += () =>
+        {
+            if (ReferenceEquals(Session, session))
+                EndSession();
+        };
+
+        if (Settings.Prop.DiscordRichPresence && !string.IsNullOrWhiteSpace(Settings.Prop.DiscordClientId))
+        {
+            Discord = new DiscordService();
+            if (Discord.Connect(Settings.Prop.DiscordClientId))
+            {
+                var place = Settings.Prop.ActivityTracking ? session.PlaceId : null;
+                Discord.SetPresence(
+                    session.IsStudio ? "Building in Octane Studio" : place is null ? "Playing Octane" : $"Place {place}",
+                    "2021 revival",
+                    place);
+            }
+        }
+    }
+
+    public static void EndSession()
+    {
+        var session = Session;
+        Session = null;
+        Discord?.Dispose();
+        Discord = null;
+        session?.Dispose();
+        if (session is not null)
+            RequestExitIfIdle();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        Session?.Dispose();
         Discord?.Dispose();
         NotifyService.Dispose();
         if (!SuppressSave)
@@ -291,7 +407,3 @@ public partial class App : System.Windows.Application
     }
 }
 
-public sealed class ProcessWatch
-{
-    public System.Diagnostics.Process Process { get; init; } = null!;
-}

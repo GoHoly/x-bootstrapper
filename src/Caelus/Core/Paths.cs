@@ -45,6 +45,6 @@ public static class Paths
 
         var full = Path.GetFullPath(path.TrimEnd('\\'));
         return string.Equals(full, Path.GetFullPath(LegacyBase), StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(full, Path.GetFullPath(PreviousBase), StringComparison.Ordinal);
+               string.Equals(full, Path.GetFullPath(PreviousBase), StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -225,6 +225,7 @@ public partial class InstallPage : UserControl
     private void Save_Click(object sender, RoutedEventArgs e)
     {
         WriteBack();
+        ApplyProtocolChoice();
         App.Save();
     }
 
@@ -236,9 +237,26 @@ public partial class InstallPage : UserControl
     private void Register_Click(object sender, RoutedEventArgs e)
     {
         WriteBack();
-        ProtocolService.Register(App.Settings.Prop);
+        var registered = ApplyProtocolChoice();
         App.Save();
-        System.Windows.MessageBox.Show("Protocol handlers were written to your user account.", AppInfo.Name);
+        System.Windows.MessageBox.Show(registered
+                ? "Website links (octane-player / octane-studio) now open through X Bootstrapper."
+                : "Website links were handed back to the official Octane launcher.",
+            AppInfo.Name);
+    }
+
+    /// <summary>Registers or removes the link handlers so they match the checkbox.</summary>
+    private static bool ApplyProtocolChoice()
+    {
+        var s = App.Settings.Prop;
+        if (s.RegisterWebsiteProtocol)
+        {
+            ProtocolService.Register(s, App.State.Prop);
+            return true;
+        }
+
+        ProtocolService.Unregister(App.State.Prop);
+        return false;
     }
 
     private void WriteBack()

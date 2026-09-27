@@ -62,7 +62,7 @@ public static class InstallerService
         settings.InstallLocation = Paths.Base;
 
         if (createShortcuts)
-            ShortcutService.Publish();
+            ShortcutService.Publish(createMissing: true);
 
         WindowsAppRegistration.Register();
 
@@ -225,6 +225,30 @@ public static class InstallerService
             return false;
         }
     }
+
+    /// <summary>True when the running exe is a newer build than the installed one, or nothing is installed.</summary>
+    public static bool ShouldRefreshPayload(string runningExe, string installedExe)
+    {
+        try
+        {
+            if (string.Equals(Path.GetFullPath(runningExe), Path.GetFullPath(installedExe), StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (!File.Exists(installedExe))
+                return true;
+
+            var running = ParseFileVersion(System.Diagnostics.FileVersionInfo.GetVersionInfo(runningExe).FileVersion);
+            var installed = ParseFileVersion(System.Diagnostics.FileVersionInfo.GetVersionInfo(installedExe).FileVersion);
+            return running > installed;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Installer", ex);
+            return false;
+        }
+    }
+
+    private static Version ParseFileVersion(string? value) =>
+        Version.TryParse(value?.Split(' ')[0], out var version) ? version : new Version(0, 0);
 
     public static void CopyPayload(string sourceExe, string destinationExe)
     {

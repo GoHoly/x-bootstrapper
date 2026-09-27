@@ -8,9 +8,11 @@ namespace Caelus.UI;
 public partial class BootstrapperWindow : Window
 {
     private readonly CancellationTokenSource _cts = new();
+    private readonly LaunchArgs _args;
 
-    public BootstrapperWindow()
+    public BootstrapperWindow(LaunchArgs args)
     {
+        _args = args;
         InitializeComponent();
         Closed += (_, _) => App.RequestExitIfIdle();
         PlayfulMotion.Attach(this, SparkleLayer);
@@ -32,10 +34,10 @@ public partial class BootstrapperWindow : Window
         PlayfulMotion.PopIn(Logo);
         PulseAccent();
 
-        var bootstrapper = new BootstrapperService(App.Settings.Prop, App.State.Prop, App.Args);
-        bootstrapper.StatusChanged += status => Dispatcher.Invoke(() =>
+        var bootstrapper = new BootstrapperService(App.Settings.Prop, App.State.Prop, _args);
+        bootstrapper.StatusChanged += status => Dispatcher.BeginInvoke(() =>
             StatusText.Text = PlayfulMotion.IsPlayful ? status + " ✨" : status);
-        bootstrapper.ProgressChanged += (value, indeterminate) => Dispatcher.Invoke(() =>
+        bootstrapper.ProgressChanged += (value, indeterminate) => Dispatcher.BeginInvoke(() =>
         {
             Progress.IsIndeterminate = indeterminate;
             if (!indeterminate)
@@ -44,63 +46,37 @@ public partial class BootstrapperWindow : Window
 
         try
         {
-            var process = await bootstrapper.RunAsync(_cts.Token);
+            var result = await bootstrapper.RunAsync(_cts.Token);
             App.Save();
 
-            if (process is not null)
+            var studio = _args.Mode == LaunchMode.Studio;
+            if (result.IsGame && result.Process is not null)
             {
-                var loaded = !string.IsNullOrWhiteSpace(App.Args.ProtocolUri)
-                    ? "Game loaded."
-                    : "Octane loaded.";
-                NotifyService.Show(AppInfo.Name, loaded);
+                NotifyService.Show(AppInfo.Name, studio
+                    ? "Octane Studio is starting."
+                    : !string.IsNullOrWhiteSpace(_args.ProtocolUri) ? "Joining your game." : "Octane is starting.");
+                App.StartSession(new GameSession(result.Process, _args.ExtractPlaceId(), studio));
+            }
+            else
+            {
+                result.Process?.Dispose();
             }
 
-            if (process is not null && App.Settings.Prop.DiscordRichPresence && !string.IsNullOrWhiteSpace(App.Settings.Prop.DiscordClientId))
-            {
-                App.Discord = new DiscordService();
-                if (App.Discord.Connect(App.Settings.Prop.DiscordClientId))
-                {
-                    var place = App.Args.ExtractPlaceId();
-                    App.Discord.SetPresence(
-                        place is null ? "Playing Octane" : $"Place {place}",
-                        "2021 revival",
-                        place);
-                }
+            var fromMenu = App.Current.Windows.OfType<MenuWindow>().Any();
+            if (App.Settings.Prop.StayOpenAfterLaunch && !fromMenu)
+                App.ShowMenu();
 
-                App.Watch = new ProcessWatch { Process = process };
-                try
-                {
-                    process.EnableRaisingEvents = true;
-                    process.Exited += (_, _) => Dispatcher.Invoke(() => System.Windows.Application.Current.Shutdown());
-                }
-                catch (InvalidOperationException)
-                {
-                    // OctanePlayerLauncher started the player, so this Process object cannot raise Exited.
-                }
-                Hide();
-                return;
-            }
-
-            if (App.Settings.Prop.StayOpenAfterLaunch)
-            {
-                Hide();
-                return;
-            }
-
-            System.Windows.Application.Current.Shutdown();
+            Close();
         }
         catch (OperationCanceledException)
         {
-            System.Windows.Application.Current.Shutdown();
+            Close();
         }
         catch (Exception ex)
         {
             Logger.Error("Bootstrapper", ex);
             System.Windows.MessageBox.Show(ex.Message, AppInfo.Name, MessageBoxButton.OK, MessageBoxImage.Error);
-            if (App.Current.Windows.OfType<MenuWindow>().Any())
-                Close();
-            else
-                System.Windows.Application.Current.Shutdown();
+            Close();
         }
     }
 
@@ -122,7 +98,5 @@ public partial class BootstrapperWindow : Window
     {
         _cts.Cancel();
         Close();
-        if (!App.Current.Windows.OfType<MenuWindow>().Any())
-            System.Windows.Application.Current.Shutdown();
     }
 }

@@ -47,11 +47,11 @@ Name: "{group}\Octane"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-player"
 Name: "{userdesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-menu"; Tasks: desktopicon
 
 [Registry]
-Root: HKCU; Subkey: "Software\Classes\octane-player"; ValueType: string; ValueName: ""; ValueData: "URL:octane-player"; Flags: uninsdeletekey; Tasks: protocols
+Root: HKCU; Subkey: "Software\Classes\octane-player"; ValueType: string; ValueName: ""; ValueData: "URL:octane-player"; Tasks: protocols
 Root: HKCU; Subkey: "Software\Classes\octane-player"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Tasks: protocols
 Root: HKCU; Subkey: "Software\Classes\octane-player\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"",0"; Tasks: protocols
 Root: HKCU; Subkey: "Software\Classes\octane-player\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Tasks: protocols
-Root: HKCU; Subkey: "Software\Classes\octane-studio"; ValueType: string; ValueName: ""; ValueData: "URL:octane-studio"; Flags: uninsdeletekey; Tasks: protocols
+Root: HKCU; Subkey: "Software\Classes\octane-studio"; ValueType: string; ValueName: ""; ValueData: "URL:octane-studio"; Tasks: protocols
 Root: HKCU; Subkey: "Software\Classes\octane-studio"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Tasks: protocols
 Root: HKCU; Subkey: "Software\Classes\octane-studio\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"",0"; Tasks: protocols
 Root: HKCU; Subkey: "Software\Classes\octane-studio\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Tasks: protocols

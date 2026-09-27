@@ -314,10 +314,15 @@ public static class ModService
     public static int ImportFolder(string sourceDirectory)
     {
         Directory.CreateDirectory(Paths.Modifications);
+        // Scan only what was selected. If the selected folder is "content" itself, paths are made
+        // relative to its parent so they keep their "content\..." prefix, but the parent is never scanned.
         var root = ModPackImporter.FindRoot(sourceDirectory);
+        var relativeBase = new DirectoryInfo(root).Name.Equals("content", StringComparison.OrdinalIgnoreCase)
+            ? Directory.GetParent(root)?.FullName ?? root
+            : root;
         var files = Directory.GetFiles(root, "*", SearchOption.AllDirectories)
             .Where(file => !Path.GetFileName(file).Equals("README.txt", StringComparison.OrdinalIgnoreCase))
-            .Select(file => (File: file, Relative: Path.GetRelativePath(root, file)))
+            .Select(file => (File: file, Relative: Path.GetRelativePath(relativeBase, file)))
             .ToList();
 
         var written = 0;

@@ -11,11 +11,27 @@ public static class Logger
 
     public static void Initialize()
     {
-        FilePath = Path.Combine(Paths.Logs, $"x-bootstrapper_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.log");
-        _writer = new StreamWriter(new FileStream(FilePath, FileMode.Create, FileAccess.Write, FileShare.Read))
+        // Several instances can start in the same second (menu + a website launch), so the name
+        // carries milliseconds and the process id, and a failure to open the log never stops the app.
+        var name = $"x-bootstrapper_{DateTime.Now:yyyy-MM-dd_HH-mm-ss-fff}_{Environment.ProcessId}.log";
+        foreach (var folder in new[] { Paths.Logs, Path.Combine(Path.GetTempPath(), "X Bootstrapper Logs") })
         {
-            AutoFlush = true
-        };
+            try
+            {
+                Directory.CreateDirectory(folder);
+                var path = Path.Combine(folder, name);
+                _writer = new StreamWriter(new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete))
+                {
+                    AutoFlush = true
+                };
+                FilePath = path;
+                break;
+            }
+            catch (Exception ex)
+            {
+                DebugWrite($"Logger could not open {folder}: {ex.Message}");
+            }
+        }
 
         Write("Logger", $"{AppInfo.Name} {AppInfo.Version} starting");
         Write("Logger", $"Install: {Paths.Base}");
@@ -26,7 +42,15 @@ public static class Logger
         var line = $"[{DateTime.Now:HH:mm:ss.fff}] [{source}] {message}";
         lock (Gate)
         {
-            _writer?.WriteLine(line);
+            try
+            {
+                _writer?.WriteLine(line);
+            }
+            catch
+            {
+                /* disk full / file gone: keep running */
+            }
+
             DebugWrite(line);
         }
     }
