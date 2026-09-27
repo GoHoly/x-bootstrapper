@@ -376,6 +376,34 @@ public partial class App : System.Windows.Application
 
         if (s.DiscordRichPresence)
             _ = StartPresenceAsync(session);
+
+        // We hand the join link to OctanePlayerLauncher.exe, which registers itself for octane-player://
+        // and octane-studio:// again when it runs; the next Play on octane.wtf then skipped X Bootstrapper
+        // (no presence, no FastFlags). Take the links back once the client is up.
+        _ = ReclaimProtocolsAsync(session);
+    }
+
+    private static async Task ReclaimProtocolsAsync(GameSession session)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(15));
+        if (ReferenceEquals(Session, session))
+            ReclaimProtocols();
+    }
+
+    private static void ReclaimProtocols()
+    {
+        if (!Settings.Prop.RegisterWebsiteProtocol || UiShots.Active)
+            return;
+
+        try
+        {
+            ProtocolService.Register(Settings.Prop, State.Prop);
+            State.Save();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Protocol", ex);
+        }
     }
 
     private static readonly TimeSpan PresenceRetry = TimeSpan.FromSeconds(20);
@@ -552,6 +580,7 @@ public partial class App : System.Windows.Application
         {
             IntegrationService.StopAll();
             TrayService.Hide();
+            ReclaimProtocols();
         }
 
         session?.Dispose();
