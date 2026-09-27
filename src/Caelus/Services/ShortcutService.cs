@@ -13,7 +13,7 @@ public static class ShortcutService
     {
         Directory.CreateDirectory(Paths.StartMenu);
         Create(Path.Combine(Paths.StartMenu, BrandShortcut), Paths.Executable, "-menu", AppInfo.Name);
-        Create(Path.Combine(Paths.StartMenu, "Aisaka.lnk"), Paths.Executable, "-player", "Launch Aisaka");
+        Create(Path.Combine(Paths.StartMenu, "Octane.lnk"), Paths.Executable, "-player", "Launch Octane");
         Create(Path.Combine(Paths.Desktop, BrandShortcut), Paths.Executable, "-menu", AppInfo.Name);
 
         foreach (var leftover in new[]
@@ -21,7 +21,7 @@ public static class ShortcutService
             Path.Combine(Paths.StartMenu, LegacyShortcut),
             Path.Combine(Paths.Desktop, LegacyShortcut),
             Path.Combine(Paths.LegacyStartMenu, LegacyShortcut),
-            Path.Combine(Paths.LegacyStartMenu, "Aisaka.lnk")
+            Path.Combine(Paths.LegacyStartMenu, "Octane.lnk")
         })
             TryDelete(leftover);
 

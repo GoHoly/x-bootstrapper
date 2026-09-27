@@ -9,16 +9,22 @@ public static class ProtocolService
     private static readonly string[] OwnProtocols =
     {
         "caelus-launcher",
-        "aisaka-launcher",
-        "aisaka-player",
+        // Confirmed from OctanePlayerLauncher.exe strings: these are the schemes octane.wtf
+        // uses for its own Play/Studio links, and what the official launcher registers itself.
+        "octane-player",
+        "octane-studio",
         "caelus-player",
-        "aisaka-studio",
         "caelus-studio"
     };
     private static readonly string[] RobloxProtocols = { "roblox-player", "roblox-studio", "roblox" };
 
     public static void Register(Settings settings)
     {
+        // Note: OctanePlayerLauncher.exe (Octane's own official launcher) registers
+        // octane-player:// / octane-studio:// itself. Whichever of the two ran most recently
+        // "owns" the HKCU registration - this is the same interception pattern Bloxstrap uses
+        // on roblox-player://, so it's expected, but call it out since it means installing/
+        // running the official Octane launcher again will silently take the handlers back.
         var exe = File.Exists(Paths.Executable) ? Paths.Executable : Environment.ProcessPath!;
         foreach (var protocol in OwnProtocols)
             RegisterProtocol(protocol, $"URL:{protocol}", exe);

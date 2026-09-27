@@ -11,11 +11,14 @@
     <ApplicationIcon>Assets\caelus.ico</ApplicationIcon>
     <RootNamespace>Caelus</RootNamespace>
     <AssemblyName>X Bootstrapper</AssemblyName>
-    <Version>1.0.5</Version>
+    <Version>2.0.0</Version>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
+    <InformationalVersion>2.0.0</InformationalVersion>
     <AssemblyTitle>X Bootstrapper</AssemblyTitle>
     <Company>X Bootstrapper</Company>
     <Product>X Bootstrapper</Product>
-    <Description>A bootstrapper for the Aisaka 2021 revival.</Description>
+    <Description>A bootstrapper for the Octane 2021 revival.</Description>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
   <ItemGroup>

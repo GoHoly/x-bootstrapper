@@ -16,7 +16,7 @@ public partial class BootstrapperWindow : Window
         if (PlayfulMotion.IsPlayful)
         {
             TitleText.Text = $"{AppInfo.Name} ✨";
-            SubtitleText.Text = "Starting Aisaka 🎀";
+            SubtitleText.Text = "Starting Octane 🎀";
         }
 
         if (App.Settings.Prop.BootstrapperStyle == Models.BootstrapperStyle.Classic)
@@ -50,7 +50,7 @@ public partial class BootstrapperWindow : Window
             {
                 var loaded = !string.IsNullOrWhiteSpace(App.Args.ProtocolUri)
                     ? "Game loaded."
-                    : "Aisaka loaded.";
+                    : "Octane loaded.";
                 NotifyService.Show(AppInfo.Name, loaded);
             }
 
@@ -61,7 +61,7 @@ public partial class BootstrapperWindow : Window
                 {
                     var place = App.Args.ExtractPlaceId();
                     App.Discord.SetPresence(
-                        place is null ? "Playing Aisaka" : $"Place {place}",
+                        place is null ? "Playing Octane" : $"Place {place}",
                         "2021 revival",
                         place);
                 }
@@ -74,7 +74,7 @@ public partial class BootstrapperWindow : Window
                 }
                 catch (InvalidOperationException)
                 {
-                    // AisakaLauncher started the player, so this Process object cannot raise Exited.
+                    // OctanePlayerLauncher started the player, so this Process object cannot raise Exited.
                 }
                 Hide();
                 return;

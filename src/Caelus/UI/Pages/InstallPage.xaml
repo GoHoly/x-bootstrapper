@@ -44,7 +44,7 @@
         <Border Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="Deployment" FontWeight="SemiBold"/>
-                <TextBlock Text="X Bootstrapper asks Aisaka for a version manifest, then downloads if one exists."
+                <TextBlock Text="X Bootstrapper asks Octane for a version manifest, then downloads if one exists."
                            Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,12" FontSize="12"/>
                 <TextBlock Text="Website" Style="{StaticResource FieldLabel}"/>
                 <TextBox x:Name="WebsiteBox"/>
@@ -60,7 +60,7 @@
         <Border Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="Protocols" FontWeight="SemiBold"/>
-                <CheckBox x:Name="WebsiteProtocolBox" Content="Handle Play on aisaka.me"/>
+                <CheckBox x:Name="WebsiteProtocolBox" Content="Handle Play on octane.wtf"/>
                 <CheckBox x:Name="RobloxProtocolBox" Content="Also handle roblox-player://  (breaks official Roblox)"/>
                 <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                     <Button Content="Re-register" Style="{StaticResource GhostButton}" Click="Register_Click"/>

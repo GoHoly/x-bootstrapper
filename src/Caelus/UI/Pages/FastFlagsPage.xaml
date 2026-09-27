@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel>
         <TextBlock Text="Fast Flags" Style="{StaticResource PageTitle}"/>
-        <TextBlock Text="Presets are written into Aisaka ClientSettings as soon as you change them. Rejoin the game for them to apply. Aisaka can ignore some flags; the file still updates."
+        <TextBlock Text="Presets are written into Octane ClientSettings as soon as you change them. Rejoin the game for them to apply. Octane can ignore some flags; the file still updates."
                    Style="{StaticResource PageSubtitle}"/>
 
         <Border Style="{StaticResource Card}">

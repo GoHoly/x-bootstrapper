@@ -20,7 +20,7 @@ public partial class MenuWindow : Window
     {
         var playful = PlayfulMotion.IsPlayful;
         BrandTitle.Text = playful ? $"{AppInfo.Name} ✨" : AppInfo.Name;
-        BrandSub.Text = playful ? "for Aisaka 🎀" : "for Aisaka";
+        BrandSub.Text = playful ? "for Octane 🎀" : "for Octane";
         NavMods.Content = playful ? "Mods 🧁" : "Mods";
         NavFlags.Content = playful ? "Fast Flags ⭐" : "Fast Flags";
         NavAppearance.Content = playful ? "Appearance 💗" : "Appearance";
@@ -28,7 +28,7 @@ public partial class MenuWindow : Window
         NavIntegrations.Content = playful ? "Integrations 💎" : "Integrations";
         NavInstall.Content = playful ? "Install 🌷" : "Install";
         NavAbout.Content = playful ? "About 🍓" : "About";
-        LaunchPlayerButton.Content = playful ? "Launch Aisaka 💕" : "Launch Aisaka";
+        LaunchPlayerButton.Content = playful ? "Launch Octane 💕" : "Launch Octane";
         LaunchStudioButton.Content = playful ? "Studio 🎀" : "Studio";
     }
 
@@ -59,10 +59,10 @@ public partial class MenuWindow : Window
             flags.Flush();
         App.Save();
         if (App.Settings.Prop.ConfirmLaunches &&
-            System.Windows.MessageBox.Show($"Launch Aisaka {(mode == LaunchMode.Studio ? "Studio" : "Player")}?", AppInfo.Name, MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+            System.Windows.MessageBox.Show($"Launch Octane {(mode == LaunchMode.Studio ? "Studio" : "Player")}?", AppInfo.Name, MessageBoxButton.YesNo) != MessageBoxResult.Yes)
             return;
 
-        App.LaunchAisaka(mode);
+        App.LaunchOctane(mode);
     }
 
     private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;

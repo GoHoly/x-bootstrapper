@@ -3,8 +3,8 @@ namespace Caelus.Core;
 public static class AppInfo
 {
     public const string Name = "X Bootstrapper";
-    public const string Version = "1.0.5";
-    public const string Website = "https://www.aisaka.me";
+    public const string Version = "2.0.0";
+    public const string Website = "https://octane.wtf";
     public const string Discord = "https://discord.gg/caelus";
     public const string ExeFileName = Name + ".exe";
     public const string LegacyFolderName = "Caelus";

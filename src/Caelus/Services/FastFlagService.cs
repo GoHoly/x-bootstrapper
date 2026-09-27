@@ -193,7 +193,7 @@ public static class FastFlagService
         if (!string.IsNullOrWhiteSpace(exeDir))
             yield return exeDir;
 
-        yield return Path.Combine(Paths.LocalAppData, "Aisaka");
+        yield return Path.Combine(Paths.LocalAppData, "Octane");
     }
 
     internal static bool IsSafeClientFolder(string? folder)

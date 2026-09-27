@@ -16,28 +16,28 @@ public sealed class ClientInstall
 
 public static class ClientLocator
 {
+    // Octane player is OctanePlayer.exe under clients\<year>\. RobloxPlayerBeta is not used for player.
     private static readonly string[] PlayerNames =
     {
-        "RobloxPlayerBeta.exe",
-        "AisakaPlayerBeta.exe",
+        "OctanePlayer.exe",
+        "OctanePlayerBeta.exe",
         "CaelusPlayerBeta.exe",
-        "RobloxPlayer.exe",
-        "AisakaPlayer.exe"
+        "RobloxPlayer.exe"
     };
 
     private static readonly string[] StudioNames =
     {
+        // Confirmed: Studio\2021\RobloxStudioBeta.exe
         "RobloxStudioBeta.exe",
-        "AisakaStudioBeta.exe",
+        "OctaneStudioBeta.exe",
         "CaelusStudioBeta.exe",
         "RobloxStudio.exe"
     };
 
     private static readonly string[] LauncherNames =
     {
-        "AisakaLauncher.exe",
+        "OctanePlayerLauncher.exe",
         "CaelusPlayerLauncher.exe",
-        "AisakaPlayerLauncher.exe",
         "RobloxPlayerLauncher.exe"
     };
 
@@ -47,11 +47,11 @@ public static class ClientLocator
             yield return settings.ClientDirectory;
 
         yield return Paths.Base;
-        yield return Path.Combine(Paths.LocalAppData, "Aisaka");
+        yield return Path.Combine(Paths.LocalAppData, "Octane");
         yield return Path.Combine(Paths.LocalAppData, "Caelus");
-        yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Aisaka");
+        yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Octane");
         yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Caelus");
-        yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Aisaka");
+        yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Octane");
         yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Caelus");
     }
 
@@ -139,7 +139,7 @@ public static class ClientLocator
 
     public static Process? FindRunningPlayer()
     {
-        foreach (var name in new[] { "AisakaPlayer", "AisakaPlayerBeta", "RobloxPlayerBeta", "RobloxPlayer", "CaelusPlayerBeta" })
+        foreach (var name in new[] { "OctanePlayer", "OctanePlayerBeta", "RobloxPlayer", "CaelusPlayerBeta" })
         {
             var process = Process.GetProcessesByName(name).FirstOrDefault();
             if (process is not null)
@@ -154,6 +154,29 @@ public static class ClientLocator
         if (!Directory.Exists(root) || !FastFlagService.IsSafeClientFolder(root))
             yield break;
 
+        // Octane layout: %LOCALAPPDATA%\Octane\clients\<year>\OctanePlayer.exe
+        // and Studio\<year>\RobloxStudioBeta.exe. Year folders (e.g. 2021), not version hashes.
+        // state\INSTALLED-<year> marks which years are present.
+        foreach (var yearDir in EnumerateOctaneYearDirs(root))
+        {
+            var player = FindFile(yearDir, PlayerNames);
+            if (player is null)
+                continue;
+
+            var year = Path.GetFileName(yearDir);
+            var studio = FindStudioForYear(root, year);
+            yield return new ClientInstall
+            {
+                Root = root,
+                VersionDirectory = yearDir,
+                PlayerExecutable = player,
+                StudioExecutable = studio,
+                LauncherExecutable = FindFile(root, LauncherNames) ?? FindExistingLauncher(),
+                VersionGuid = year
+            };
+        }
+
+        // Legacy Roblox/prior revival Versions\<hash> layout (kept as fallback).
         var versions = Path.Combine(root, "Versions");
         if (!Directory.Exists(versions))
             yield break;
@@ -176,6 +199,59 @@ public static class ClientLocator
         }
     }
 
+    private static IEnumerable<string> EnumerateOctaneYearDirs(string root)
+    {
+        var clients = Path.Combine(root, "clients");
+        if (!Directory.Exists(clients))
+            yield break;
+
+        var preferred = new List<string>();
+        var stateDir = Path.Combine(root, "state");
+        if (Directory.Exists(stateDir))
+        {
+            foreach (var marker in Directory.GetFiles(stateDir, "INSTALLED-*"))
+            {
+                var name = Path.GetFileName(marker);
+                if (!name.StartsWith("INSTALLED-", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                var year = name["INSTALLED-".Length..];
+                if (string.IsNullOrWhiteSpace(year))
+                    continue;
+                var yearDir = Path.Combine(clients, year);
+                if (Directory.Exists(yearDir))
+                    preferred.Add(yearDir);
+            }
+        }
+
+        var all = Directory.GetDirectories(clients)
+            .Where(d => Directory.GetFiles(d, "OctanePlayer.exe").Length > 0
+                        || Directory.GetFiles(d, "OctanePlayerBeta.exe").Length > 0
+                        || Directory.GetFiles(d, "*.exe").Any(f =>
+                            PlayerNames.Any(n => n.Equals(Path.GetFileName(f), StringComparison.OrdinalIgnoreCase))))
+            .OrderByDescending(Directory.GetLastWriteTimeUtc)
+            .ToList();
+
+        foreach (var dir in preferred.Concat(all).Distinct(StringComparer.OrdinalIgnoreCase))
+            yield return dir;
+    }
+
+    private static string? FindStudioForYear(string root, string year)
+    {
+        foreach (var candidate in new[]
+                 {
+                     Path.Combine(root, "Studio", year),
+                     Path.Combine(root, "clients", "Studio", year),
+                     Path.Combine(root, "studio", year)
+                 })
+        {
+            var studio = FindFile(candidate, StudioNames);
+            if (studio is not null)
+                return studio;
+        }
+
+        return FindFile(root, StudioNames);
+    }
+
     public static ClientInstall? FromPlayerProcess(Process process)
     {
         try
@@ -188,12 +264,18 @@ public static class ClientLocator
             if (!FastFlagService.IsSafeClientFolder(versionDir))
                 return null;
 
-            var root = Directory.GetParent(versionDir)?.FullName ?? versionDir;
+            // clients\2021 -> root is Octane (two levels up from year dir when under clients)
+            var parent = Directory.GetParent(versionDir);
+            var root = parent?.Name.Equals("clients", StringComparison.OrdinalIgnoreCase) == true
+                ? parent.Parent?.FullName ?? parent.FullName
+                : parent?.FullName ?? versionDir;
+
             return new ClientInstall
             {
                 Root = root,
                 VersionDirectory = versionDir,
                 PlayerExecutable = path,
+                StudioExecutable = FindStudioForYear(root, Path.GetFileName(versionDir)),
                 LauncherExecutable = FindFile(root, LauncherNames) ?? FindExistingLauncher(),
                 VersionGuid = Path.GetFileName(versionDir)
             };
@@ -210,26 +292,8 @@ public static class ClientLocator
         if (!Directory.Exists(root) || !FastFlagService.IsSafeClientFolder(root))
             return null;
 
-        var versions = Path.Combine(root, "Versions");
-        if (Directory.Exists(versions))
-        {
-            foreach (var versionDir in Directory.GetDirectories(versions).OrderByDescending(Directory.GetLastWriteTimeUtc))
-            {
-                var player = FindFile(versionDir, PlayerNames);
-                if (player is null)
-                    continue;
-
-                return new ClientInstall
-                {
-                    Root = root,
-                    VersionDirectory = versionDir,
-                    PlayerExecutable = player,
-                    StudioExecutable = FindFile(versionDir, StudioNames) ?? FindFile(root, StudioNames),
-                    LauncherExecutable = FindFile(root, LauncherNames),
-                    VersionGuid = Path.GetFileName(versionDir)
-                };
-            }
-        }
+        foreach (var install in FindPlayersInRoot(root))
+            return install;
 
         var rootPlayer = FindFile(root, PlayerNames);
         if (rootPlayer is not null)
@@ -262,6 +326,9 @@ public static class ClientLocator
 
     private static string? FindFile(string directory, IEnumerable<string> names)
     {
+        if (!Directory.Exists(directory))
+            return null;
+
         foreach (var name in names)
         {
             var path = Path.Combine(directory, name);
@@ -279,9 +346,10 @@ public static class ClientLocator
     {
         foreach (var root in new[]
                  {
-                     Path.Combine(Paths.LocalAppData, "Aisaka"),
+                     Path.Combine(Paths.LocalAppData, "Octane"),
+                     Path.Combine(Paths.LocalAppData, "Octane", "clients"),
                      Path.Combine(Paths.LocalAppData, "Caelus"),
-                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Aisaka")
+                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Octane")
                  })
         {
             var launcher = FindFile(root, LauncherNames);

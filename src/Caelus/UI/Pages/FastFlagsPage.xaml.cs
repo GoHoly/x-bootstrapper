@@ -60,7 +60,7 @@ public partial class FastFlagsPage : System.Windows.Controls.UserControl
     {
         Write(presetsOnly: false);
         System.Windows.MessageBox.Show(
-            "Flags are saved into the Aisaka ClientSettings folder. Rejoin the game for them to take effect.",
+            "Flags are saved into the Octane ClientSettings folder. Rejoin the game for them to take effect.",
             AppInfo.Name);
     }
 

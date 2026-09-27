@@ -22,7 +22,7 @@ public sealed class BootstrapperService
 
     public async Task<Process?> RunAsync(CancellationToken token)
     {
-        SetStatus("Connecting to Aisaka...");
+        SetStatus("Connecting to Octane...");
         SetProgress(0, indeterminate: true);
 
         ClientInstall? install = ClientLocator.Find(_settings, _state);
@@ -45,7 +45,7 @@ public sealed class BootstrapperService
                 }
                 else
                 {
-                    SetStatus("Aisaka is up to date.");
+                    SetStatus("Octane is up to date.");
                 }
             }
             else
@@ -57,15 +57,15 @@ public sealed class BootstrapperService
         install ??= ClientLocator.Find(_settings, _state);
         if (install is null)
             throw new InvalidOperationException(
-                "X Bootstrapper could not find an Aisaka client.\n\n" +
-                "Install the official Aisaka launcher once, or set a client folder / setup URL in Install settings.");
+                "X Bootstrapper could not find an Octane client.\n\n" +
+                "Install the official Octane launcher once, or set a client folder / setup URL in Install settings.");
 
         ApplyOverrides(install, log: true, mods: true);
 
         if (_settings.RegisterWebsiteProtocol)
             ProtocolService.Register(_settings);
 
-        SetStatus("Starting Aisaka...");
+        SetStatus("Starting Octane...");
         var process = await LaunchAsync(install, token);
 
         _state.PlayerVersionGuid = install.VersionGuid;
@@ -79,22 +79,23 @@ public sealed class BootstrapperService
 
     private async Task<Process> LaunchAsync(ClientInstall install, CancellationToken token)
     {
-        // AisakaPlayer does not accept aisaka-player: / caelus-launcher: URIs. That is error 610.
-        // The official launcher turns the website Play link into a real join.
+        // OctanePlayer does not accept octane-player: / caelus-launcher: URIs directly (mirrors the
+        // same quirk prior revival had - error 610). The official Octane launcher turns the website
+        // Play link into a real join, so we hand off to OctanePlayerLauncher.exe the same way.
         if (!string.IsNullOrWhiteSpace(_args.ProtocolUri))
         {
             if (!string.IsNullOrWhiteSpace(install.LauncherExecutable) && File.Exists(install.LauncherExecutable))
             {
                 var join = _args.ToPlayerArgument();
-                Logger.Write("Bootstrapper", "Handing the join URI to AisakaLauncher.");
+                Logger.Write("Bootstrapper", "Handing the join URI to OctanePlayerLauncher.");
                 var launcher = StartProcess(install.LauncherExecutable, start => start.ArgumentList.Add(join));
                 var player = await WaitForPlayerAsync(token);
                 return player ?? launcher;
             }
 
             throw new InvalidOperationException(
-                "AisakaLauncher.exe is missing, so the website Play link cannot be turned into a join.\n\n" +
-                "Install the official Aisaka launcher once, then try Play again.");
+                "OctanePlayerLauncher.exe is missing, so the website Play link cannot be turned into a join.\n\n" +
+                "Install the official Octane launcher once, then try Play again.");
         }
 
         var exe = _args.Mode == LaunchMode.Studio
@@ -121,7 +122,7 @@ public sealed class BootstrapperService
             var player = ClientLocator.FindRunningPlayer();
             if (player is not null)
             {
-                Logger.Write("Bootstrapper", $"AisakaPlayer is running ({player.Id})");
+                Logger.Write("Bootstrapper", $"OctanePlayer is running ({player.Id})");
                 var target = ClientLocator.FromPlayerProcess(player) ?? ClientLocator.Find(_settings, _state);
                 if (target is not null)
                     FastFlagService.ApplyAll(_settings, _state, target, log: true);
@@ -131,7 +132,7 @@ public sealed class BootstrapperService
             await Task.Delay(50, token);
         }
 
-        Logger.Write("Bootstrapper", "AisakaPlayer did not appear after AisakaLauncher started.");
+        Logger.Write("Bootstrapper", "OctanePlayer did not appear after OctanePlayerLauncher started.");
         return null;
     }
 
@@ -152,7 +153,7 @@ public sealed class BootstrapperService
     private static Process StartProcess(string exe, Action<ProcessStartInfo> configure)
     {
         if (!File.Exists(exe))
-            throw new FileNotFoundException("The Aisaka executable is missing.", exe);
+            throw new FileNotFoundException("The Octane executable is missing.", exe);
 
         var start = new ProcessStartInfo
         {
@@ -164,7 +165,7 @@ public sealed class BootstrapperService
 
         var process = Process.Start(start);
         if (process is null)
-            throw new InvalidOperationException("Windows refused to start the Aisaka client.");
+            throw new InvalidOperationException("Windows refused to start the Octane client.");
 
         return process;
     }

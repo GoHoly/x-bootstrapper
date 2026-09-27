@@ -138,7 +138,7 @@ public partial class ModsPage : System.Windows.Controls.UserControl
         Run("Could not import that folder.", () =>
         {
             var count = ModService.ImportFolder(dialog.SelectedPath);
-            RefreshStatus($"Imported {count} file(s) and applied them to Aisaka. Fully close the game, then Play again.");
+            RefreshStatus($"Imported {count} file(s) and applied them to Octane. Fully close the game, then Play again.");
         });
     }
 
@@ -157,7 +157,7 @@ public partial class ModsPage : System.Windows.Controls.UserControl
         Run("Could not import that zip.", () =>
         {
             var count = ModService.ImportZip(dialog.FileName);
-            RefreshStatus($"Imported {count} file(s) and applied them to Aisaka. Fully close the game, then Play again.");
+            RefreshStatus($"Imported {count} file(s) and applied them to Octane. Fully close the game, then Play again.");
         });
     }
 
@@ -181,7 +181,7 @@ public partial class ModsPage : System.Windows.Controls.UserControl
     {
         var count = ModService.Count();
         StatusText.Text = extra ?? (count == 0
-            ? "No mods yet. Choose a file above, then press Play on aisaka.me."
-            : $"{count} mod file(s) ready. They apply the next time Aisaka starts.");
+            ? "No mods yet. Choose a file above, then press Play on octane.wtf."
+            : $"{count} mod file(s) ready. They apply the next time Octane starts.");
     }
 }

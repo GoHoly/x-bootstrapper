@@ -38,7 +38,7 @@
                     </Border>
                     <TextBlock Text="X Bootstrapper" FontSize="22" FontWeight="SemiBold" Margin="0,12,0,0"/>
                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,10,0,0" LineHeight="20"
-                               Text="Launches Aisaka, then copies FastFlags and mods onto the 2021 client."/>
+                               Text="Launches Octane, then copies FastFlags and mods onto the 2021 client."/>
                     <TextBlock Margin="0,24,0,0" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" FontSize="12"
                                Text="Not affiliated with Roblox Corporation."/>
                 </StackPanel>
@@ -51,7 +51,7 @@
                     <TextBox x:Name="LocationBox"/>
                 </DockPanel>
                 <CheckBox x:Name="ShortcutsBox" Content="Start Menu and desktop shortcuts" IsChecked="True" Margin="0,16,0,0"/>
-                <CheckBox x:Name="ProtocolBox" Content="Handle Play on aisaka.me" IsChecked="True"/>
+                <CheckBox x:Name="ProtocolBox" Content="Handle Play on octane.wtf" IsChecked="True"/>
                 <CheckBox x:Name="RobloxProtocolBox" Content="Also handle roblox-player://"/>
                 <Button Content="Install" Style="{StaticResource AccentButton}" Margin="0,24,0,0" HorizontalAlignment="Left" Click="Install_Click"/>
                 <TextBlock x:Name="StatusText" Margin="0,12,0,0" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" FontSize="12"/>

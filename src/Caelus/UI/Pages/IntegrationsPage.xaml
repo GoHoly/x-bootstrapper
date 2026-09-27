@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel>
         <TextBlock Text="Integrations" Style="{StaticResource PageTitle}"/>
-        <TextBlock Text="Optional extras that sit on top of the Aisaka client."
+        <TextBlock Text="Optional extras that sit on top of the Octane client."
                    Style="{StaticResource PageSubtitle}"/>
 
         <Border Style="{StaticResource Card}">

@@ -30,7 +30,7 @@
                     </Border>
                     <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
                         <TextBlock x:Name="TitleText" Text="X Bootstrapper" FontSize="15" FontWeight="SemiBold"/>
-                        <TextBlock x:Name="SubtitleText" Text="Starting Aisaka" Foreground="{DynamicResource MutedBrush}" FontSize="11"/>
+                        <TextBlock x:Name="SubtitleText" Text="Starting Octane" Foreground="{DynamicResource MutedBrush}" FontSize="11"/>
                     </StackPanel>
                 </StackPanel>
 

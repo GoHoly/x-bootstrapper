@@ -85,7 +85,7 @@ internal static class UiSound
         AppTheme.Xyxy => Keycap(night: false, rich: false),
         AppTheme.XyxyDark => Keycap(night: true, rich: false),
         AppTheme.Dark => Tick(168, 0.06, 0.20, 0.10),
-        AppTheme.Aisaka => Tick(214, 0.065, 0.26, 0.10),
+        AppTheme.Octane => Tick(214, 0.065, 0.26, 0.10),
         AppTheme.Dusk => Tick(154, 0.08, 0.14, 0.09),
         AppTheme.Light => Tick(430, 0.045, 0.62, 0.08),
         AppTheme.Classic => Tick(784, 0.035, 0.85, 0.07),
@@ -104,7 +104,7 @@ internal static class UiSound
         {
             AppTheme.Classic => 523,
             AppTheme.Light => 620,
-            AppTheme.Aisaka => 320,
+            AppTheme.Octane => 320,
             _ => 250
         }, 0.09, 0.35, 0.07);
 

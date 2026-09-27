@@ -24,7 +24,7 @@ public static class DeploymentService
 
     static DeploymentService()
     {
-        Http.DefaultRequestHeaders.UserAgent.ParseAdd("Caelus/1.0 (+https://www.aisaka.me)");
+        Http.DefaultRequestHeaders.UserAgent.ParseAdd("Caelus/1.0 (+https://octane.wtf)");
     }
 
     public static async Task<ClientVersionInfo?> QueryAsync(Settings settings, Action<string>? status, CancellationToken token)
@@ -32,6 +32,9 @@ public static class DeploymentService
         var candidates = new[]
         {
             settings.ManifestUrl,
+            // Do NOT use https://octane.wtf/version.txt — it returns the login page HTML.
+            // Optional launcher channel only; client install is detected via state\INSTALLED-*.
+            $"{settings.SetupBaseUrl.TrimEnd('/')}/version.txt",
             $"{settings.WebsiteUrl.TrimEnd('/')}/caelus-manifest.json",
             $"{settings.SetupBaseUrl.TrimEnd('/')}/caelus.json",
             $"{settings.SetupBaseUrl.TrimEnd('/')}/version"
@@ -50,7 +53,7 @@ public static class DeploymentService
 
                 var media = response.Content.Headers.ContentType?.MediaType ?? "";
                 var body = (await response.Content.ReadAsStringAsync(token)).Trim();
-                if (string.IsNullOrWhiteSpace(body) || body.StartsWith("<"))
+                if (string.IsNullOrWhiteSpace(body) || body.StartsWith("<") || body.Contains("<html", StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 if (media.Contains("json", StringComparison.OrdinalIgnoreCase) || body.StartsWith('{'))
@@ -73,6 +76,12 @@ public static class DeploymentService
 
                 if (body.StartsWith("version-", StringComparison.OrdinalIgnoreCase) || body.All(c => char.IsLetterOrDigit(c) || c is '-' or '.'))
                 {
+                    // This is the shape Octane's version.txt actually returns (a bare GUID).
+                    // The rbxPkgManifest.txt guess below is carried over from the Roblox/prior revival
+                    // deployment layout and is UNVERIFIED for Octane - if Octane's CDN doesn't
+                    // expose per-package manifests this way, InstallFromManifestAsync will just
+                    // fail its GET and InstallAsync() falls through to "no update available",
+                    // leaving any existing/official Octane install alone rather than corrupting it.
                     var guid = body.Split('\n', '\r')[0].Trim();
                     return new ClientVersionInfo
                     {
@@ -109,7 +118,7 @@ public static class DeploymentService
         {
             var zip = Path.Combine(Paths.Downloads, $"{version.VersionGuid}.zip");
             await DownloadAsync(version.PlayerUrl, zip, progress, status, token);
-            status?.Invoke("Extracting Aisaka...");
+            status?.Invoke("Extracting Octane...");
             if (Directory.Exists(destination))
                 Directory.Delete(destination, true);
             ZipFile.ExtractToDirectory(zip, destination);

@@ -57,8 +57,8 @@ public static class ThemeService
         },
         new()
         {
-            Id = AppTheme.Aisaka,
-            Name = "Aisaka",
+            Id = AppTheme.Octane,
+            Name = "Octane",
             Blurb = "Ink navy and a hard red, after the revival.",
             Accent = Rgb(0xD4, 0x36, 0x2C),
             AccentHover = Rgb(0xE4, 0x4A, 0x3E),

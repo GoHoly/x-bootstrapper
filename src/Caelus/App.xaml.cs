@@ -40,6 +40,9 @@ public partial class App : System.Windows.Application
         Settings.Load();
         State.Load();
 
+        if (MigrateAisakaSettings(Settings.Prop))
+            Settings.Save();
+
         if (!string.IsNullOrWhiteSpace(Settings.Prop.InstallLocation) &&
             !Paths.IsLegacyDefault(Settings.Prop.InstallLocation) &&
             !string.Equals(Path.GetFullPath(Settings.Prop.InstallLocation), Path.GetFullPath(Paths.Base), StringComparison.OrdinalIgnoreCase))
@@ -169,7 +172,48 @@ public partial class App : System.Windows.Application
         State.Save();
     }
 
-    public static void LaunchAisaka(LaunchMode mode = LaunchMode.Player)
+
+    /// <summary>
+    /// Old installs left WebsiteUrl/SetupBaseUrl/ManifestUrl pointing at aisaka.me.
+    /// Rewrite them to Octane once so the bootstrapper status no longer says setup.aisaka.me.
+    /// </summary>
+    private static bool MigrateAisakaSettings(Settings settings)
+    {
+        var changed = false;
+
+        static bool IsLegacyRevivalHost(string? url) =>
+            !string.IsNullOrWhiteSpace(url) &&
+            url.Contains("aisaka", StringComparison.OrdinalIgnoreCase);
+
+        if (IsLegacyRevivalHost(settings.WebsiteUrl) || string.IsNullOrWhiteSpace(settings.WebsiteUrl))
+        {
+            settings.WebsiteUrl = "https://octane.wtf";
+            changed = true;
+        }
+
+        if (IsLegacyRevivalHost(settings.SetupBaseUrl) || string.IsNullOrWhiteSpace(settings.SetupBaseUrl))
+        {
+            settings.SetupBaseUrl = "https://octane.wtf/setup/launcher";
+            changed = true;
+        }
+
+        if (IsLegacyRevivalHost(settings.ManifestUrl))
+        {
+            settings.ManifestUrl = "";
+            changed = true;
+        }
+
+        // Official Octane owns the client; local state\INSTALLED-* is the source of truth.
+        if (settings.CheckForClientUpdates)
+        {
+            settings.CheckForClientUpdates = false;
+            changed = true;
+        }
+
+        return changed;
+    }
+
+        public static void LaunchOctane(LaunchMode mode = LaunchMode.Player)
     {
         Args = new LaunchArgs { Mode = mode };
         new BootstrapperWindow().Show();

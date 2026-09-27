@@ -7,6 +7,13 @@ namespace Caelus.Services;
 
 public static class TicketService
 {
+    // UNVERIFIED: unlike the version-check endpoint, no auth/ticket-redemption URL showed up in
+    // OctanePlayerLauncher.exe's strings - that call is probably made by octane.wtf's own website
+    // JS or by the client itself, not the bootstrapper, so it wasn't in this binary to find.
+    // Left overridable via settings; if you have Octane's real endpoint, set it there instead of
+    // relying on this guess.
+    public static string RedeemUrl { get; set; } = "https://octane.wtf/v1/authentication-ticket/redeem";
+
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
 
     static TicketService()
@@ -27,9 +34,9 @@ public static class TicketService
         {
             try
             {
-                using var request = new HttpRequestMessage(HttpMethod.Post, "https://auth.aisaka.me/v1/authentication-ticket/redeem");
+                using var request = new HttpRequestMessage(HttpMethod.Post, RedeemUrl);
                 request.Content = new StringContent(body, Encoding.UTF8, body.StartsWith('{') ? "application/json" : "text/plain");
-                request.Headers.TryAddWithoutValidation("RBXAuthenticationNegotiation", "https://www.aisaka.me");
+                request.Headers.TryAddWithoutValidation("RBXAuthenticationNegotiation", "https://octane.wtf");
                 using var response = await Http.SendAsync(request, token);
                 var text = (await response.Content.ReadAsStringAsync(token)).Trim();
                 if (!response.IsSuccessStatusCode || string.IsNullOrWhiteSpace(text) || text.StartsWith('<'))

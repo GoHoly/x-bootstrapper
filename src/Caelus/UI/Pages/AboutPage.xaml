@@ -13,11 +13,11 @@
                 </Border>
                 <TextBlock x:Name="VersionText" FontSize="16" FontWeight="SemiBold"/>
                 <TextBlock TextWrapping="Wrap" Margin="0,10,0,0" Foreground="{DynamicResource MutedBrush}"
-                           Text="X Bootstrapper is a local launcher for Aisaka. It starts the 2021 client, then copies FastFlags and mods onto the version folder."/>
+                           Text="X Bootstrapper is a local launcher for Octane. It starts the 2021 client, then copies FastFlags and mods onto the version folder."/>
                 <TextBlock TextWrapping="Wrap" Margin="0,10,0,0" Foreground="{DynamicResource MutedBrush}"
-                           Text="Not affiliated with Roblox Corporation. Aisaka is a third-party revival at aisaka.me."/>
+                           Text="Not affiliated with Roblox Corporation. Octane is a third-party revival at octane.wtf."/>
                 <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
-                    <Button Content="aisaka.me" Style="{StaticResource AccentButton}" Click="Website_Click"/>
+                    <Button Content="octane.wtf" Style="{StaticResource AccentButton}" Click="Website_Click"/>
                     <Button Content="GitHub" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="GitHub_Click"/>
                     <Button Content="Discord" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="Discord_Click"/>
                     <Button Content="Logs" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="Logs_Click"/>

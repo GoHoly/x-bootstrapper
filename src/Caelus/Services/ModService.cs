@@ -252,7 +252,7 @@ public static class ModService
         foreach (var relative in cursor.AllPaths)
             WriteModFile(legacy, relative);
 
-        Logger.Write("Mods", "Moved the cursor onto the paths Aisaka actually loads.");
+        Logger.Write("Mods", "Moved the cursor onto the paths Octane actually loads.");
     }
 
     public static ModSlot? GuessSlot(string fileName)
@@ -377,7 +377,7 @@ public static class ModService
     {
         foreach (var root in new[]
                  {
-                     Path.Combine(Paths.LocalAppData, "Aisaka"),
+                     Path.Combine(Paths.LocalAppData, "Octane"),
                      Paths.Base
                  })
         {
@@ -433,7 +433,7 @@ public static class ModService
         if (!File.Exists(readme))
         {
             File.WriteAllText(readme,
-                "Drop 2021-era client files here using the same paths as the Aisaka version folder.\r\n" +
+                "Drop 2021-era client files here using the same paths as the Octane version folder.\r\n" +
                 "Or use the Mods page pickers for cursors, shiftlock, emote wheel, Tab list, and sounds.\r\n" +
                 "Examples:\r\n" +
                 "  content\\sounds\\uuhhh.mp3\r\n" +

@@ -87,12 +87,11 @@ public sealed class LaunchArgs
     public static bool IsProtocol(string arg)
     {
         return arg.StartsWith("caelus-launcher:", StringComparison.OrdinalIgnoreCase) ||
-               arg.StartsWith("aisaka-launcher:", StringComparison.OrdinalIgnoreCase) ||
                arg.StartsWith("roblox-player:", StringComparison.OrdinalIgnoreCase) ||
                arg.StartsWith("roblox:", StringComparison.OrdinalIgnoreCase) ||
-               arg.StartsWith("aisaka-player:", StringComparison.OrdinalIgnoreCase) ||
+               arg.StartsWith("octane-player:", StringComparison.OrdinalIgnoreCase) ||
                arg.StartsWith("caelus-player:", StringComparison.OrdinalIgnoreCase) ||
-               arg.StartsWith("aisaka-studio:", StringComparison.OrdinalIgnoreCase) ||
+               arg.StartsWith("octane-studio:", StringComparison.OrdinalIgnoreCase) ||
                arg.StartsWith("caelus-studio:", StringComparison.OrdinalIgnoreCase) ||
                arg.StartsWith("roblox-studio:", StringComparison.OrdinalIgnoreCase);
     }
@@ -103,10 +102,10 @@ public sealed class LaunchArgs
             return "";
 
         var uri = ProtocolUri;
-        foreach (var scheme in new[] { "caelus-launcher:", "aisaka-launcher:", "caelus-player:" })
+        foreach (var scheme in new[] { "caelus-launcher:", "caelus-player:" })
         {
             if (uri.StartsWith(scheme, StringComparison.OrdinalIgnoreCase))
-                return "aisaka-player:" + uri[scheme.Length..];
+                return "octane-player:" + uri[scheme.Length..];
         }
 
         return uri;

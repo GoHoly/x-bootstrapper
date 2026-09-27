@@ -47,7 +47,7 @@ public sealed class DiscordService : IDisposable
         var activity = new Dictionary<string, object?>
         {
             ["details"] = details,
-            ["state"] = state ?? "Aisaka 2021",
+            ["state"] = state ?? "Octane",
             ["timestamps"] = new Dictionary<string, object>
             {
                 ["start"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
@@ -64,8 +64,9 @@ public sealed class DiscordService : IDisposable
             {
                 new Dictionary<string, string>
                 {
-                    ["label"] = "View on Aisaka",
-                    ["url"] = $"https://www.aisaka.me/games/{placeId}"
+                    ["label"] = "View on Octane",
+                    // Unverified path - octane.wtf's real game-URL route wasn't in the binary strings.
+                    ["url"] = $"https://octane.wtf/games/{placeId}"
                 }
             };
         }

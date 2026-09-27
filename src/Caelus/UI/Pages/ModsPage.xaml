@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel>
         <TextBlock Text="Mods" Style="{StaticResource PageTitle}"/>
-        <TextBlock Text="Drop in a whole UI pack, or replace one file at a time. X Bootstrapper copies them onto the 2021 client when Aisaka starts."
+        <TextBlock Text="Drop in a whole UI pack, or replace one file at a time. X Bootstrapper copies them onto the 2021 client when Octane starts."
                    Style="{StaticResource PageSubtitle}"/>
 
         <Border Style="{StaticResource Card}">

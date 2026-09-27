@@ -1,47 +1,55 @@
 # X Bootstrapper
 
-Open-source launcher for [Aisaka](https://www.aisaka.me/), the 2021 Roblox revival.
+Open-source launcher for [Octane](https://octane.wtf), the 2021 Roblox revival.
 
-X Bootstrapper does not ship a client. It finds the installed Aisaka player, writes FastFlags, copies your mods onto the version folder, then starts Player or Studio.
+X Bootstrapper does not ship a game client. It finds your Octane install (`%LOCALAPPDATA%\Octane`), writes FastFlags, copies your mods into the 2021 client folder, then starts Octane Player or Studio.
 
-**Not affiliated with Roblox Corporation.**
+**Not affiliated with Roblox Corporation or the Octane team.**
 
 ## Install
 
-Download **X Bootstrapper Setup.exe** from [Releases](https://github.com/nicolasishere1282-dotcom/x-bootstrapper/releases/latest). No administrator account is required. It installs to `%LOCALAPPDATA%\X Bootstrapper`.
+1. Download **X.Bootstrapper.Setup.exe** from [Releases](https://github.com/nicolasishere1282-dotcom/x-bootstrapper/releases/latest).
+2. Run it. You don't need an administrator account. It installs to `%LOCALAPPDATA%\X Bootstrapper`.
 
-The app auto-updates from GitHub Releases when you open the menu.
+You need Octane installed from [octane.wtf](https://octane.wtf) first. X Bootstrapper uses the 2021 client at `%LOCALAPPDATA%\Octane\clients\2021\OctanePlayer.exe` and Studio at `%LOCALAPPDATA%\Octane\Studio\2021\RobloxStudioBeta.exe`.
+
+## Updates
+
+X Bootstrapper checks GitHub Releases for this repository when you open it. It installs new versions automatically, and you can turn that off. The Install tab lists every release, so you can stay on your current version or install an older one.
 
 ## Features
 
-- Mods, Fast Flags, and launcher themes (including xyxy light/dark)
-- Windows notifications when a game or Aisaka finishes loading, and when a new launcher version is out
-- Auto-update from this repository, or pick a previous version on the Install tab
-- `aisaka-player://` / `aisaka-launcher://` handlers for Play on aisaka.me
+- Handles `octane-player://` and `octane-studio://`, so **Play** on octane.wtf opens through X Bootstrapper
 - Optional `roblox-player://` handler
+- Mods, FastFlags and renderer presets, applied to the Octane 2021 client
+- Launcher themes
+- Windows notifications when a game finishes loading and when a new launcher version is out
 - Discord Rich Presence over local IPC
 
 ## Build
 
-Needs the .NET 8 SDK.
+You need the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
 
 ```powershell
 dotnet build "src\Caelus\Caelus.csproj" -c Release
 ```
 
-To build the installer (self-contained Setup.exe):
+To build the self-contained app and the installer:
 
 ```powershell
 .\publish.ps1
 ```
 
-The installer is written to `dist\X Bootstrapper Setup.exe`.
+`publish.ps1` publishes a self-contained win-x64 build, then compiles `installer\XBootstrapper.iss` with [Inno Setup 6](https://jrsoftware.org/isinfo.php). It downloads Inno Setup if it can't find it. The installer is written to `dist\X Bootstrapper Setup.exe`.
+
+Releases are built by `.github/workflows/release.yml` when a `v*` tag is pushed. That workflow publishes a single-file exe, builds the installer and attaches `X.Bootstrapper.Setup.exe` to the GitHub release.
 
 ## Usage
 
-- First run of a portable build opens the installer.
+- The first run of a portable build opens the installer.
 - The Start Menu shortcut opens settings (`-menu`).
-- `-player` launches Aisaka. A protocol URI from aisaka.me is passed through to the 2021 client.
+- `-player` launches Octane. `-studio` launches Octane Studio.
+- A protocol link from octane.wtf is handed to the Octane 2021 client.
 
 ## License
 

@@ -215,7 +215,7 @@ public partial class InstallPage : UserControl
     {
         using var dialog = new FolderBrowserDialog
         {
-            Description = "Select the Aisaka client folder",
+            Description = "Select the Octane client folder",
             UseDescriptionForTitle = true
         };
         if (dialog.ShowDialog() == DialogResult.OK)

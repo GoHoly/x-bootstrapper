@@ -1,5 +1,5 @@
 {
   "version": "version-yourguid",
-  "playerUrl": "https://your-cdn.example/aisaka-player.zip",
-  "studioUrl": "https://your-cdn.example/aisaka-studio.zip"
+  "playerUrl": "https://your-cdn.example/octane-player.zip",
+  "studioUrl": "https://your-cdn.example/octane-studio.zip"
 }

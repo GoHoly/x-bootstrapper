@@ -9,7 +9,7 @@
         <Border Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="Theme" FontWeight="SemiBold"/>
-                <TextBlock Text="These only change X Bootstrapper. Aisaka keeps whatever you threw in Mods."
+                <TextBlock Text="These only change X Bootstrapper. Octane keeps whatever you threw in Mods."
                            Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,14" FontSize="12"/>
                 <WrapPanel x:Name="ThemePanel"/>
             </StackPanel>
@@ -18,7 +18,7 @@
         <Border Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="Launch window" FontWeight="SemiBold"/>
-                <TextBlock Text="The small dialog while Aisaka is starting."
+                <TextBlock Text="The small dialog while Octane is starting."
                            Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,10" FontSize="12"/>
                 <ComboBox x:Name="StyleBox">
                     <ComboBoxItem Content="Match theme"/>

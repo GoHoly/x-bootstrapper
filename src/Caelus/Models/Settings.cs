@@ -12,7 +12,7 @@ public enum AppTheme
 {
     Dark,
     Light,
-    Aisaka,
+    Octane,
     Classic,
     Dusk,
     Xyxy,
@@ -31,9 +31,11 @@ public sealed class Settings
 {
     public bool Installed { get; set; }
     public string InstallLocation { get; set; } = "";
-    public string WebsiteUrl { get; set; } = "https://www.aisaka.me";
-    public string SetupBaseUrl { get; set; } = "https://setup.aisaka.me";
-    public string ManifestUrl { get; set; } = "https://www.aisaka.me/caelus-manifest.json";
+    public string WebsiteUrl { get; set; } = "https://octane.wtf";
+    // Launcher self-update only. Client presence is local (state\INSTALLED-<year>), not a CDN feed.
+    public string SetupBaseUrl { get; set; } = "https://octane.wtf/setup/launcher";
+    // Left blank: https://octane.wtf/version.txt is the login page HTML, not a version feed.
+    public string ManifestUrl { get; set; } = "";
     public string ClientDirectory { get; set; } = "";
     public string Channel { get; set; } = "live";
 
@@ -41,7 +43,8 @@ public sealed class Settings
     public BootstrapperStyle BootstrapperStyle { get; set; } = BootstrapperStyle.Fluent;
     public bool UiSounds { get; set; } = true;
 
-    public bool CheckForClientUpdates { get; set; } = true;
+    // Official Octane install owns the client; X Bootstrapper finds it locally.
+    public bool CheckForClientUpdates { get; set; } = false;
     public bool CheckForAppUpdates { get; set; } = true;
     public string GitHubRepository { get; set; } = "";
     public bool ConfirmLaunches { get; set; }

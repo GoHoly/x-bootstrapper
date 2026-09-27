@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v2.0.0)'
+        required: true
+        default: 'v2.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish single-file exe (self-contained win-x64)
+        shell: pwsh
+        run: |
+          dotnet publish src/Caelus/Caelus.csproj -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true -p:DebugType=none -o publish/app
+          if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed" }
+
+      - name: Build Setup installer (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+            $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          }
+          & $iscc installer/XBootstrapper.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup compile failed" }
+          New-Item -ItemType Directory -Force out | Out-Null
+          # Asset names must stay X.Bootstrapper.Setup.exe so existing installs keep auto-updating.
+          Copy-Item "dist/X Bootstrapper Setup.exe" "out/X.Bootstrapper.Setup.exe"
+          Copy-Item "publish/app/X Bootstrapper.exe" "out/X.Bootstrapper.exe"
+          Get-ChildItem out | Format-Table Name, Length
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = $env:TAG.TrimStart('v')
+          gh release view $env:TAG 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:TAG out/X.Bootstrapper.Setup.exe out/X.Bootstrapper.exe --clobber
+          } else {
+            gh release create $env:TAG out/X.Bootstrapper.Setup.exe out/X.Bootstrapper.exe `
+              --title "X Bootstrapper $version" --notes-file release-notes.md --target $env:GITHUB_SHA
+          }
+          if ($LASTEXITCODE -ne 0) { throw "gh release failed" }

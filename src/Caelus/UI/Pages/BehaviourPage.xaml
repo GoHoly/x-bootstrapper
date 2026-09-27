@@ -8,7 +8,7 @@
 
         <Border Style="{StaticResource Card}">
             <StackPanel>
-                <CheckBox x:Name="UpdatesBox" Content="Check Aisaka for a newer client before launching"/>
+                <CheckBox x:Name="UpdatesBox" Content="Check Octane for a newer client before launching"/>
                 <CheckBox x:Name="AppUpdatesBox" Content="Auto-update X Bootstrapper from GitHub (or pick a version in Install)"/>
                 <CheckBox x:Name="ConfirmBox" Content="Ask before launching"/>
                 <CheckBox x:Name="StayBox" Content="Keep X Bootstrapper open after the client starts"/>
