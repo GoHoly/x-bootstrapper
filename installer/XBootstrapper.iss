@@ -21,7 +21,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=..\src\Caelus\Assets\caelus.ico
+SetupIconFile=..\src\Caelus\Assets\x-bootstrapper.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName}
 OutputDir=..\dist
@@ -55,10 +55,6 @@ Root: HKCU; Subkey: "Software\Classes\octane-studio"; ValueType: string; ValueNa
 Root: HKCU; Subkey: "Software\Classes\octane-studio"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Tasks: protocols
 Root: HKCU; Subkey: "Software\Classes\octane-studio\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"",0"; Tasks: protocols
 Root: HKCU; Subkey: "Software\Classes\octane-studio\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Tasks: protocols
-Root: HKCU; Subkey: "Software\Classes\caelus-launcher"; ValueType: string; ValueName: ""; ValueData: "URL:caelus-launcher"; Flags: uninsdeletekey; Tasks: protocols
-Root: HKCU; Subkey: "Software\Classes\caelus-launcher"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Tasks: protocols
-Root: HKCU; Subkey: "Software\Classes\caelus-launcher\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"",0"; Tasks: protocols
-Root: HKCU; Subkey: "Software\Classes\caelus-launcher\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""; Tasks: protocols
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Parameters: "-menu"; Description: "Open {#MyAppName}"; Flags: nowait postinstall skipifsilent

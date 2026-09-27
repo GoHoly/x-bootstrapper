@@ -21,7 +21,6 @@ public partial class InstallPage : UserControl
         var s = App.Settings.Prop;
         ClientBox.Text = s.ClientDirectory;
         WebsiteProtocolBox.IsChecked = s.RegisterWebsiteProtocol;
-        RobloxProtocolBox.IsChecked = s.RegisterRobloxProtocol;
         AppUpdatesBox.IsChecked = s.CheckForAppUpdates;
         CurrentVersionText.Text = $"This PC is on {AppInfo.Version}.";
         AppUpdatesBox.Checked += (_, _) =>
@@ -260,7 +259,6 @@ public partial class InstallPage : UserControl
         var s = App.Settings.Prop;
         s.ClientDirectory = ClientBox.Text.Trim();
         s.RegisterWebsiteProtocol = WebsiteProtocolBox.IsChecked == true;
-        s.RegisterRobloxProtocol = RobloxProtocolBox.IsChecked == true;
         s.CheckForAppUpdates = AppUpdatesBox.IsChecked == true;
     }
 }

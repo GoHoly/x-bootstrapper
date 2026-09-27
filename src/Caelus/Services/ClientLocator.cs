@@ -20,25 +20,19 @@ public static class ClientLocator
     private static readonly string[] PlayerNames =
     {
         "OctanePlayer.exe",
-        "OctanePlayerBeta.exe",
-        "CaelusPlayerBeta.exe",
-        "RobloxPlayer.exe"
+        "OctanePlayerBeta.exe"
     };
 
     private static readonly string[] StudioNames =
     {
         // Confirmed: Studio\2021\RobloxStudioBeta.exe
         "RobloxStudioBeta.exe",
-        "OctaneStudioBeta.exe",
-        "CaelusStudioBeta.exe",
-        "RobloxStudio.exe"
+        "OctaneStudioBeta.exe"
     };
 
     private static readonly string[] LauncherNames =
     {
-        "OctanePlayerLauncher.exe",
-        "CaelusPlayerLauncher.exe",
-        "RobloxPlayerLauncher.exe"
+        "OctanePlayerLauncher.exe"
     };
 
     public static IEnumerable<string> CandidateRoots(Settings settings)
@@ -48,11 +42,8 @@ public static class ClientLocator
 
         yield return Paths.Base;
         yield return Path.Combine(Paths.LocalAppData, "Octane");
-        yield return Path.Combine(Paths.LocalAppData, "Caelus");
         yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Octane");
-        yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Caelus");
         yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Octane");
-        yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Caelus");
     }
 
     public static ClientInstall? Find(Settings settings, AppState state)
@@ -146,8 +137,8 @@ public static class ClientLocator
         return PlayerNames.Any(player => player.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
 
-    public static readonly string[] PlayerProcessNames = { "OctanePlayer", "OctanePlayerBeta", "CaelusPlayerBeta" };
-    public static readonly string[] StudioProcessNames = { "RobloxStudioBeta", "OctaneStudioBeta", "CaelusStudioBeta" };
+    public static readonly string[] PlayerProcessNames = { "OctanePlayer", "OctanePlayerBeta" };
+    public static readonly string[] StudioProcessNames = { "RobloxStudioBeta", "OctaneStudioBeta" };
 
     public static HashSet<int> RunningIds(IEnumerable<string> processNames)
     {
@@ -438,7 +429,6 @@ public static class ClientLocator
                  {
                      Path.Combine(Paths.LocalAppData, "Octane"),
                      Path.Combine(Paths.LocalAppData, "Octane", "clients"),
-                     Path.Combine(Paths.LocalAppData, "Caelus"),
                      Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Octane")
                  })
         {

@@ -24,15 +24,17 @@ internal static class AppUpdateService
 
     private static readonly TimeSpan StallTimeout = TimeSpan.FromSeconds(60);
 
+    private const string UserAgent = "XBootstrapper/" + AppInfo.Version;
+
     private static readonly SemaphoreSlim Gate = new(1, 1);
     private static IReadOnlyList<AppRelease>? _cache;
     private static DateTimeOffset _cacheAt;
 
     static AppUpdateService()
     {
-        Http.DefaultRequestHeaders.UserAgent.ParseAdd($"{AppInfo.Name.Replace(' ', '-')}/{AppInfo.Version}");
+        Http.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
         Http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
-        DownloadClient.DefaultRequestHeaders.UserAgent.ParseAdd($"{AppInfo.Name.Replace(' ', '-')}/{AppInfo.Version}");
+        DownloadClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
     }
 
     public static async Task CheckInBackgroundAsync(LaunchArgs args)

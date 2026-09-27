@@ -52,7 +52,6 @@
                 </DockPanel>
                 <CheckBox x:Name="ShortcutsBox" Content="Start Menu and desktop shortcuts" IsChecked="True" Margin="0,16,0,0"/>
                 <CheckBox x:Name="ProtocolBox" Content="Handle Play on octane.wtf" IsChecked="True"/>
-                <CheckBox x:Name="RobloxProtocolBox" Content="Also handle roblox-player://"/>
                 <Button Content="Install" Style="{StaticResource AccentButton}" Margin="0,24,0,0" HorizontalAlignment="Left" Click="Install_Click"/>
                 <TextBlock x:Name="StatusText" Margin="0,12,0,0" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" FontSize="12"/>
             </StackPanel>

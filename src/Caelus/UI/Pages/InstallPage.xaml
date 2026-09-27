@@ -44,8 +44,7 @@
         <Border Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="Protocols" FontWeight="SemiBold"/>
-                <CheckBox x:Name="WebsiteProtocolBox" Content="Handle Play on octane.wtf"/>
-                <CheckBox x:Name="RobloxProtocolBox" Content="Also handle roblox-player://  (breaks official Roblox)"/>
+                <CheckBox x:Name="WebsiteProtocolBox" Content="Handle Play on octane.wtf (octane-player / octane-studio links)"/>
                 <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                     <Button Content="Re-register" Style="{StaticResource GhostButton}" Click="Register_Click"/>
                     <Button Content="Save" Style="{StaticResource AccentButton}" Margin="8,0,0,0" Click="Save_Click"/>

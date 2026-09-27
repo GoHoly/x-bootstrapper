@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>Assets\caelus.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\x-bootstrapper.ico</ApplicationIcon>
     <RootNamespace>Caelus</RootNamespace>
     <AssemblyName>X Bootstrapper</AssemblyName>
     <Version>2.0.0</Version>
@@ -22,7 +22,7 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
   <ItemGroup>
-    <Resource Include="Assets\caelus.ico" />
+    <Resource Include="Assets\x-bootstrapper.ico" />
     <Resource Include="Assets\x-mark.png" />
     <Resource Include="Assets\x-banner.png" />
   </ItemGroup>

@@ -9,7 +9,7 @@
         <Border Style="{StaticResource Card}">
             <StackPanel>
                 <TextBlock Text="Import a pack" FontWeight="SemiBold"/>
-                <TextBlock Text="Select the pack folder (sugarbunnies ui, or the content folder inside it)."
+                <TextBlock Text="Select the pack folder (the one that contains &quot;content&quot;, or the content folder itself), or a .zip of it."
                            Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,12" FontSize="12"/>
                 <WrapPanel>
                     <Button Content="Import folder" Style="{StaticResource AccentButton}" Click="ImportFolder_Click"/>

@@ -32,7 +32,6 @@ public partial class InstallerWindow : Window
     {
         try
         {
-            App.Settings.Prop.RegisterRobloxProtocol = RobloxProtocolBox.IsChecked == true;
             InstallerService.Install(
                 App.Settings.Prop,
                 LocationBox.Text,

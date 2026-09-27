@@ -358,7 +358,7 @@ public static class ModService
     public static int ImportZip(string zipPath)
     {
         Directory.CreateDirectory(Paths.Modifications);
-        var temp = Path.Combine(Path.GetTempPath(), "caelus-modpack-" + Guid.NewGuid().ToString("N"));
+        var temp = Path.Combine(Path.GetTempPath(), "xb-modpack-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(temp);
         try
         {
@@ -380,15 +380,13 @@ public static class ModService
 
     public static void ApplyToInstalledClients()
     {
-        foreach (var root in new[]
-                 {
-                     Path.Combine(Paths.LocalAppData, "Octane"),
-                     Paths.Base
-                 })
+        // Every client X Bootstrapper knows about, including a custom client folder.
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var install in ClientLocator.FindAll(App.Settings.Prop, App.State.Prop, null))
         {
-            var install = ClientLocator.FindInRoot(root);
-            if (install is not null)
-                Apply(install, log: true);
+            if (string.IsNullOrWhiteSpace(install.VersionDirectory) || !seen.Add(install.VersionDirectory))
+                continue;
+            Apply(install, log: seen.Count == 1);
         }
     }
 

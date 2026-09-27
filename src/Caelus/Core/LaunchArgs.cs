@@ -90,10 +90,7 @@ public sealed class LaunchArgs
         ["octane-studio"] = "octane-studio",
         ["caelus-launcher"] = "octane-player",
         ["caelus-player"] = "octane-player",
-        ["caelus-studio"] = "octane-studio",
-        ["roblox-player"] = "octane-player",
-        ["roblox"] = "octane-player",
-        ["roblox-studio"] = "octane-studio"
+        ["caelus-studio"] = "octane-studio"
     };
 
     public static string? SchemeOf(string? arg)

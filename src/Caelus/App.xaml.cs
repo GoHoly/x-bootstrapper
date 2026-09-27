@@ -149,6 +149,8 @@ public partial class App : System.Windows.Application
                 WindowsAppRegistration.Register();
                 if (Settings.Prop.RegisterWebsiteProtocol)
                     ProtocolService.Register(Settings.Prop, State.Prop);
+                else
+                    ProtocolService.CleanupLegacy(State.Prop);
                 Native.NotifyShell();
             }
             catch (Exception ex)

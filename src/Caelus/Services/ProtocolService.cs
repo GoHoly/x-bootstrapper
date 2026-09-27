@@ -6,18 +6,21 @@ namespace Caelus.Services;
 
 public static class ProtocolService
 {
-    private static readonly string[] OwnProtocols =
+    // Confirmed from OctanePlayerLauncher.exe strings: these are the schemes octane.wtf uses for
+    // its own Play/Studio links, and what the official launcher registers itself.
+    private static readonly string[] OwnProtocols = { "octane-player", "octane-studio" };
+
+    // Registered by Caelus / X Bootstrapper 2.0 and older. Never registered any more; removed at
+    // startup when they still point at us, so Roblox and old Caelus links aren't hijacked.
+    private static readonly string[] LegacyProtocols =
     {
         "caelus-launcher",
-        // Confirmed from OctanePlayerLauncher.exe strings: these are the schemes octane.wtf
-        // uses for its own Play/Studio links, and what the official launcher registers itself.
-        "octane-player",
-        "octane-studio",
         "caelus-player",
-        "caelus-studio"
+        "caelus-studio",
+        "roblox-player",
+        "roblox-studio",
+        "roblox"
     };
-    private static readonly string[] RobloxProtocols = { "roblox-player", "roblox-studio", "roblox" };
-    private static readonly string[] OctaneProtocols = { "octane-player", "octane-studio" };
 
     public static void Register(Settings settings, AppState? state = null)
     {
@@ -29,13 +32,16 @@ public static class ProtocolService
         foreach (var protocol in OwnProtocols)
             RegisterProtocol(protocol, exe, state);
 
-        if (settings.RegisterRobloxProtocol)
-        {
-            foreach (var protocol in RobloxProtocols)
-                RegisterProtocol(protocol, exe, state);
-        }
-
+        CleanupLegacy(state);
         Logger.Write("Protocol", $"Registered handlers for {exe}");
+    }
+
+    /// <summary>Removes caelus-* / roblox-* handlers that an older version pointed at us.</summary>
+    public static void CleanupLegacy(AppState? state = null)
+    {
+        state ??= CurrentState();
+        foreach (var protocol in LegacyProtocols)
+            RemoveIfOurs(protocol, state);
     }
 
     /// <summary>
@@ -45,24 +51,28 @@ public static class ProtocolService
     public static void Unregister(AppState? state = null)
     {
         state ??= CurrentState();
-        foreach (var protocol in OwnProtocols.Concat(RobloxProtocols).Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (var protocol in OwnProtocols.Concat(LegacyProtocols))
+            RemoveIfOurs(protocol, state);
+    }
+
+    private static void RemoveIfOurs(string protocol, AppState? state)
+    {
+        try
         {
-            try
-            {
-                var command = ReadCommand(protocol);
-                if (!IsOwnHandler(command))
-                    continue;
+            var command = ReadCommand(protocol);
+            if (!IsOwnHandler(command))
+                return;
 
-                if (TryRestoreOfficial(protocol, state))
-                    continue;
+            if (TryRestoreOfficial(protocol, state))
+                return;
 
-                using var key = Registry.CurrentUser.OpenSubKey(@"Software\Classes", writable: true);
-                key?.DeleteSubKeyTree(protocol, throwOnMissingSubKey: false);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error("Protocol", ex);
-            }
+            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Classes", writable: true);
+            key?.DeleteSubKeyTree(protocol, throwOnMissingSubKey: false);
+            Logger.Write("Protocol", $"Removed our {protocol}:// handler");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Protocol", ex);
         }
     }
 
@@ -125,15 +135,13 @@ public static class ProtocolService
 
     private static bool TryRestoreOfficial(string protocol, AppState? state)
     {
-        if (!OctaneProtocols.Contains(protocol, StringComparer.OrdinalIgnoreCase))
-            return false;
-
         string? command = null;
         if (state is not null && state.OfficialProtocolHandlers.TryGetValue(protocol, out var saved) &&
             TryGetExecutable(saved, out var savedExe) && File.Exists(savedExe) && !IsOwnExecutable(savedExe))
             command = saved;
 
-        if (command is null)
+        // Only Octane's own schemes fall back to OctanePlayerLauncher.exe.
+        if (command is null && OwnProtocols.Contains(protocol, StringComparer.OrdinalIgnoreCase))
         {
             var launcher = ClientLocator.FindExistingLauncher();
             if (!string.IsNullOrWhiteSpace(launcher))

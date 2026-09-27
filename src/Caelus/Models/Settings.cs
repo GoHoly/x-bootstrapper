@@ -42,7 +42,6 @@ public sealed class Settings
     public bool ConfirmLaunches { get; set; }
     public bool StayOpenAfterLaunch { get; set; }
     public bool RegisterWebsiteProtocol { get; set; } = true;
-    public bool RegisterRobloxProtocol { get; set; }
 
     public bool DiscordRichPresence { get; set; } = true;
     public string DiscordClientId { get; set; } = "";
