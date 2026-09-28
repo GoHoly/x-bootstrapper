@@ -138,7 +138,7 @@ public sealed class AppState
     public Dictionary<string, string> OfficialProtocolHandlers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     // FastFlag keys X Bootstrapper wrote last time, so flags you delete are removed from the client too.
     public List<string> WrittenFlagKeys { get; set; } = new();
-    // Version that last started (missing before 2.3.0). A newer build than this one = an update happened.
+    // Version that last started (missing in 2.2.1 and older). A newer build than this one = an update happened.
     public string? LastRunVersion { get; set; }
     // What's new is due for this version (set when an update is detected) and was shown for that one.
     public string? WhatsNewPendingVersion { get; set; }

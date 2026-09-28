@@ -1,4 +1,4 @@
-X Bootstrapper 2.3.0 adds a sky picker, a Discord status choice, a warning when Play on octane.wtf stops going through X Bootstrapper, one-click log bundles, a first-run setup and a What's new window. Closing X Bootstrapper now exits it completely by default.
+X Bootstrapper 2.3.1 adds a sky picker, a Discord status choice, a warning when Play on octane.wtf stops going through X Bootstrapper, one-click log bundles, a first-run setup and a What's new window. Closing X Bootstrapper now exits it completely by default.
 
 ## New
 - **Sky picker (Mods page).** Pick Sunset, Starry night, Purple nebula or Clear day, or use your own six images of any size (names ending in _bk, _dn, _ft, _lf, _rt, _up are placed automatically, anything else is asked for face by face). X Bootstrapper converts them to the client's own sky format. **Default** puts Octane's original sky back exactly. Games that set their own sky keep theirs

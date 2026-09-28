@@ -22,7 +22,7 @@ using Point = System.Windows.Point;
 namespace Caelus.UI;
 
 /// <summary>
-/// <c>-devtest &lt;name&gt; &lt;folder&gt; [-devbase &lt;profile folder&gt;]</c>: developer checks for the 2.3.0 features.
+/// <c>-devtest &lt;name&gt; &lt;folder&gt; [-devbase &lt;profile folder&gt;]</c>: developer checks for the 2.3 features.
 /// Windows are rendered off-screen and driven through automation peers (no mouse). With -devbase the run uses
 /// a throwaway profile and may save it; without it nothing is saved. Writes &lt;name&gt;-results.txt and screenshots.
 /// </summary>
