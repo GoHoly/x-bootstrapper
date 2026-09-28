@@ -102,7 +102,7 @@
         <Setter Property="Width" Value="36"/>
         <Setter Property="Height" Value="36"/>
         <Setter Property="CornerRadius" Value="10"/>
-        <Setter Property="Background" Value="#0B0B0D"/>
+        <Setter Property="Background" Value="{DynamicResource LogoTileBrush}"/>
         <Setter Property="ClipToBounds" Value="True"/>
         <Setter Property="HorizontalAlignment" Value="Left"/>
     </Style>
@@ -111,7 +111,7 @@
         <Setter Property="Width" Value="40"/>
         <Setter Property="Height" Value="40"/>
         <Setter Property="CornerRadius" Value="10"/>
-        <Setter Property="Background" Value="#0B0B0D"/>
+        <Setter Property="Background" Value="{DynamicResource LogoTileBrush}"/>
         <Setter Property="ClipToBounds" Value="True"/>
     </Style>
 

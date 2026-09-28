@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Media;
+using Caelus.Core;
 using Caelus.Models;
 using Color = System.Windows.Media.Color;
 
@@ -375,6 +376,42 @@ public static class ThemeService
 
     private static readonly Dictionary<UiStyle, ResourceDictionary> StyleDictionaries = new();
 
+    /// <summary>
+    /// What picking a theme or style in the UI does: repaint first, then remember it. The save used to come first, so a
+    /// save that threw (Settings.json briefly locked by another X Bootstrapper process, antivirus or a sync tool) aborted
+    /// the pick before anything repainted, and the choice only landed on disk with the next save.
+    /// </summary>
+    public static void Pick(AppTheme theme, UiStyle style, string source)
+    {
+        Logger.Write("Theme", $"{source}: {theme} ({style})");
+        App.Settings.Prop.Theme = theme;
+        App.Settings.Prop.UiStyle = style;
+        Apply(theme, style);
+        try
+        {
+            App.Save();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Theme", ex);
+        }
+
+        UiSound.PlayTheme();
+    }
+
+    /// <summary>
+    /// Runs <paramref name="pick"/> when the element is pressed. Tiles react on press, not release: the press bounce shrinks
+    /// the tile and the page repaints, so a release could land outside it (or on a rebuilt tile) and the pick was lost.
+    /// </summary>
+    public static void OnPress(UIElement element, Action pick) =>
+        element.MouseLeftButtonDown += (_, e) =>
+        {
+            if (e.Handled)
+                return;
+            e.Handled = true;
+            pick();
+        };
+
     /// <summary>Applies a theme in the current style.</summary>
     public static void Apply(AppTheme theme) => Apply(theme, Style);
 
@@ -457,7 +494,45 @@ public static class ThemeService
         Set(resources, "HoverBrush", palette.Hover);
         Set(resources, "PopupBrush", palette.Popup);
         Set(resources, "TrackBrush", palette.Track);
+        resources["LogoImage"] = Logo(palette.Id);
+        // The neon logos glow on dark themes straight over the window; light themes (and the original mark) keep the dark tile.
+        var dark = (palette.Background.R * 0.299 + palette.Background.G * 0.587 + palette.Background.B * 0.114) < 96;
+        Set(resources, "LogoTileBrush", LogoFile(palette.Id) is not null && dark ? Colors.Transparent : Rgb(0x0B, 0x0B, 0x0D));
         return resources;
+    }
+
+    /// <summary>
+    /// Per-theme logo: the neon "X in a broken circle" whose color matches the theme's accent. Midnight (the default)
+    /// and themes without a match keep the original mark.
+    /// </summary>
+    public static string? LogoFile(AppTheme theme) => theme switch
+    {
+        AppTheme.Octane => "logo-purple.png",
+        AppTheme.Classic => "logo-blue.png",
+        AppTheme.Light or AppTheme.Dusk => "logo-red.png",
+        AppTheme.Xyxy or AppTheme.XyxyDark => "logo-pink.png",
+        _ => null
+    };
+
+    private static readonly Dictionary<string, System.Windows.Media.Imaging.BitmapImage> Logos = new();
+
+    public static System.Windows.Media.Imaging.BitmapImage Logo(AppTheme theme)
+    {
+        var file = LogoFile(theme);
+        var uri = file is null ? "pack://application:,,,/Assets/x-mark.png" : $"pack://application:,,,/Assets/logos/{file}";
+        if (!Logos.TryGetValue(uri, out var image))
+        {
+            image = new System.Windows.Media.Imaging.BitmapImage();
+            image.BeginInit();
+            image.UriSource = new Uri(uri, UriKind.Absolute);
+            image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            image.DecodePixelWidth = 256;
+            image.EndInit();
+            image.Freeze();
+            Logos[uri] = image;
+        }
+
+        return image;
     }
 
     private static void Set(ResourceDictionary resources, string key, Color color)

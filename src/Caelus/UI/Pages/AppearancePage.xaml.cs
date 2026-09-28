@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Caelus.Core;
 using Caelus.Models;
 
 namespace Caelus.UI.Pages;
@@ -67,7 +68,7 @@ public partial class AppearancePage : System.Windows.Controls.UserControl
         toggle.Children.Add(ModeChip("Dark 🌙", selected && dark, () => Select(AppTheme.XyxyDark), palette));
         stack.Children.Add(toggle);
 
-        card.MouseLeftButtonUp += (_, _) => Select(selected && dark ? AppTheme.XyxyDark : AppTheme.Xyxy);
+        ThemeService.OnPress(card, () => Select(selected && dark ? AppTheme.XyxyDark : AppTheme.Xyxy));
         return card;
     }
 
@@ -90,11 +91,7 @@ public partial class AppearancePage : System.Windows.Controls.UserControl
             FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal,
             Foreground = new SolidColorBrush(on ? palette.AccentForeground : palette.Muted)
         };
-        chip.MouseLeftButtonUp += (_, e) =>
-        {
-            e.Handled = true;
-            pick();
-        };
+        ThemeService.OnPress(chip, pick);
         return chip;
     }
 
@@ -161,7 +158,7 @@ public partial class AppearancePage : System.Windows.Controls.UserControl
         });
         card.Child = stack;
         if (bindClick)
-            card.MouseLeftButtonUp += (_, _) => Select(palette.Id);
+            ThemeService.OnPress(card, () => Select(palette.Id));
         return card;
     }
 
@@ -170,18 +167,12 @@ public partial class AppearancePage : System.Windows.Controls.UserControl
         if (App.Settings.Prop.UiStyle == style && ThemeService.Style == style)
             return;
 
-        App.Settings.Prop.UiStyle = style;
-        App.Save();
         // The menu rebuilds the current page (this one) once the style dictionary is swapped.
-        ThemeService.Apply(App.Settings.Prop.Theme, style);
-        UiSound.PlayTheme();
+        ThemeService.Pick(App.Settings.Prop.Theme, style, "Style");
     }
 
     private void Select(AppTheme theme)
     {
-        App.Settings.Prop.Theme = theme;
-        App.Save();
-        ThemeService.Apply(theme);
-        UiSound.PlayTheme();
+        ThemeService.Pick(theme, ThemeService.Style, "Picked");
     }
 }

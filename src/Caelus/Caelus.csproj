@@ -11,10 +11,10 @@
     <ApplicationIcon>Assets\x-bootstrapper.ico</ApplicationIcon>
     <RootNamespace>Caelus</RootNamespace>
     <AssemblyName>X Bootstrapper</AssemblyName>
-    <Version>2.3.1</Version>
-    <AssemblyVersion>2.3.1.0</AssemblyVersion>
-    <FileVersion>2.3.1.0</FileVersion>
-    <InformationalVersion>2.3.1</InformationalVersion>
+    <Version>2.3.2</Version>
+    <AssemblyVersion>2.3.2.0</AssemblyVersion>
+    <FileVersion>2.3.2.0</FileVersion>
+    <InformationalVersion>2.3.2</InformationalVersion>
     <AssemblyTitle>X Bootstrapper</AssemblyTitle>
     <Company>X Bootstrapper</Company>
     <Product>X Bootstrapper</Product>
@@ -24,6 +24,7 @@
   <ItemGroup>
     <Resource Include="Assets\x-bootstrapper.ico" />
     <Resource Include="Assets\x-mark.png" />
+    <Resource Include="Assets\logos\*.png" />
     <Resource Include="Assets\x-banner.png" />
     <!-- This version's notes, shown in the What's new popup after an update (works offline). -->
     <EmbeddedResource Include="..\..\release-notes.md" LogicalName="release-notes.md" Link="release-notes.md" />

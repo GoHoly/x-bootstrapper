@@ -174,27 +174,21 @@ public partial class SetupWindow : Window
             TextTrimming = TextTrimming.CharacterEllipsis
         });
         tile.Child = stack;
-        tile.MouseLeftButtonUp += (_, _) => SelectTheme(palette.Id);
+        ThemeService.OnPress(tile, () => SelectTheme(palette.Id));
         return tile;
     }
 
     /// <summary>What a theme tile click does (also used by the developer tests).</summary>
     internal void SelectTheme(AppTheme theme)
     {
-        App.Settings.Prop.Theme = theme;
-        App.Save();
-        ThemeService.Apply(theme);
-        UiSound.PlayTheme();
+        ThemeService.Pick(theme, ThemeService.Style, "Setup");
     }
 
     private static void SetStyle(UiStyle style)
     {
         if (App.Settings.Prop.UiStyle == style && ThemeService.Style == style)
             return;
-        App.Settings.Prop.UiStyle = style;
-        App.Save();
-        ThemeService.Apply(App.Settings.Prop.Theme, style);
-        UiSound.PlayTheme();
+        ThemeService.Pick(App.Settings.Prop.Theme, style, "Setup style");
     }
 
     private void Finish(bool skipped)

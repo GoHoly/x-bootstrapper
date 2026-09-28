@@ -45,7 +45,7 @@
 
                     <StackPanel Style="{DynamicResource BrandPanel}">
                         <Border Style="{DynamicResource BrandMark}">
-                            <Image x:Name="BrandMark" Source="/Assets/x-mark.png" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <Image x:Name="BrandMark" Source="{DynamicResource LogoImage}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
                         </Border>
                         <TextBlock x:Name="BrandTitle" Text="X Bootstrapper" FontWeight="SemiBold" FontSize="16" Margin="0,10,0,0"/>
                         <TextBlock Style="{DynamicResource CardText}" x:Name="BrandSub" Text="for Octane" Margin="0,2,0,0"/>

@@ -1,4 +1,13 @@
-X Bootstrapper 2.3.1 adds a sky picker, a Discord status choice, a warning when Play on octane.wtf stops going through X Bootstrapper, one-click log bundles, a first-run setup and a What's new window. Closing X Bootstrapper now exits it completely by default.
+X Bootstrapper 2.3.2 fixes theme picking and gives themes their own logo.
+
+## Fixed
+- **Picking a theme works every time.** Clicking a theme tile sometimes didn't change anything. The tile only reacted when the mouse button was released over it, but the tile shrinks a little while pressed (and more in xyxy's theme), so a release near its edge could miss it. The pick also saved before repainting, so if Settings.json was busy for a moment the menu never changed and the theme only showed up later. Tiles now react as soon as you press them, the menu repaints first and then saves. Same fix for the first-run setup
+
+## New
+- **Theme logos.** Octane shows a purple neon logo, Classic a blue one, Paper and Dusk a red one, xyxy's theme a pink one. Midnight keeps the original X. The logo changes right away in the menu, the launch window, the setup, update and What's new windows
+
+## Also in 2.3
+Version 2.3.1 added a sky picker, a Discord status choice, a warning when Play on octane.wtf stops going through X Bootstrapper, one-click log bundles, a first-run setup and a What's new window. Closing X Bootstrapper exits it completely by default.
 
 ## New
 - **Sky picker (Mods page).** Pick Sunset, Starry night, Purple nebula or Clear day, or use your own six images of any size (names ending in _bk, _dn, _ft, _lf, _rt, _up are placed automatically, anything else is asked for face by face). X Bootstrapper converts them to the client's own sky format. **Default** puts Octane's original sky back exactly. Games that set their own sky keep theirs

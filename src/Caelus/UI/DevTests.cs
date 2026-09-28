@@ -60,6 +60,7 @@ internal static class DevTests
                 case "links": await LinksAsync(devBase); break;
                 case "sky": await SkyAsync(dir); break;
                 case "logs": await LogsAsync(dir); break;
+                case "themes": await ThemesAsync(args); break;
                 default: Check(false, "unknown test " + name); break;
             }
         }
@@ -685,6 +686,172 @@ internal static class DevTests
         }
 
         menu.Close();
+    }
+
+    // ------------------------------------------------------------------ themes
+
+    private static Color Sample(Window window, double x, double y)
+    {
+        var root = (FrameworkElement)window.Content;
+        var bitmap = new RenderTargetBitmap((int)root.ActualWidth, (int)root.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+        bitmap.Render(root);
+        var pixel = new byte[4];
+        bitmap.CopyPixels(new Int32Rect((int)x, (int)y, 1, 1), pixel, 4, 0);
+        return Color.FromRgb(pixel[2], pixel[1], pixel[0]);
+    }
+
+    private static bool Near(Color a, Color b, int tolerance = 12) =>
+        Math.Abs(a.R - b.R) <= tolerance && Math.Abs(a.G - b.G) <= tolerance && Math.Abs(a.B - b.B) <= tolerance;
+
+    private static string Hex(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+
+    private static string LogoName(Window window, string imageName)
+    {
+        if (window.FindName(imageName) is System.Windows.Controls.Image { Source: BitmapImage bitmap })
+            return Path.GetFileNameWithoutExtension(bitmap.UriSource?.ToString() ?? "?");
+        return window.FindName(imageName) is System.Windows.Controls.Image image ? image.Source?.ToString() ?? "none" : "missing";
+    }
+
+    /// <summary>
+    /// Picks every theme the way a click on its tile does (the tile's MouseLeftButtonUp, found by hit-testing its
+    /// center), in both styles, and checks the open menu really repaints: sidebar and page pixels against the palette,
+    /// the logo, the launch window. With -restartcheck it only reports what a fresh start shows (theme saved earlier).
+    /// </summary>
+    private static async Task ThemesAsync(string[] args)
+    {
+        if (args.Any(arg => arg.Equals("-restartcheck", StringComparison.OrdinalIgnoreCase)))
+        {
+            var fresh = await OpenMenuAsync();
+            var p = ThemeService.Current;
+            var side = Sample(fresh, 4, fresh.ActualHeight - 40);
+            Check(Near(side, p.Sidebar), $"fresh start shows {App.Settings.Prop.Theme}/{App.Settings.Prop.UiStyle}", $"sidebar {Hex(side)} want {Hex(p.Sidebar)}, logo {LogoName(fresh, "BrandMark")}");
+            UiShots.SaveWindowAs(fresh, $"restart-menu-{Tag(App.Settings.Prop.Theme, App.Settings.Prop.UiStyle)}.png");
+            var boot = await ShowAsync(new BootstrapperWindow(new LaunchArgs { Mode = LaunchMode.Player }), 1200);
+            UiShots.SaveWindowAs(boot, $"restart-launch-{Tag(App.Settings.Prop.Theme, App.Settings.Prop.UiStyle)}.png");
+            boot.Close();
+            return;
+        }
+
+        var menu = await OpenMenuAsync();
+        var startTheme = App.Settings.Prop.Theme;
+        var traced = 0;
+        void Trace(object sender, RoutedEventArgs e)
+        {
+            if (traced++ > 40)
+                return;
+            var src = e.OriginalSource as FrameworkElement;
+            var srcTag = src is null ? "" : $"{src.GetType().Name}:{src.Name}:{src.Tag}";
+            Note($"  trace {e.RoutedEvent.Name} at {sender.GetType().Name} src {srcTag} handled={e.Handled} captured={System.Windows.Input.Mouse.Captured?.GetType().Name ?? "-"}");
+        }
+        foreach (var ev in new[] { UIElement.PreviewMouseDownEvent, UIElement.MouseDownEvent, UIElement.PreviewMouseUpEvent, UIElement.MouseUpEvent })
+            menu.AddHandler(ev, new RoutedEventHandler(Trace), true);
+        Note($"start: theme {startTheme}, style {App.Settings.Prop.UiStyle}, palette {ThemeService.Current.Id}");
+        foreach (var style in new[] { UiStyle.Modern, UiStyle.Classic })
+        {
+            if (ThemeService.Style != style)
+            {
+                var page0 = (AppearancePage)menu.Navigate("NavAppearance")!;
+                await UiShots.SettleAsync(700);
+                Toggle((CheckBox)page0.FindName("ClassicStyleBox"));
+                await UiShots.SettleAsync(1200);
+            }
+
+            foreach (var theme in Enum.GetValues<AppTheme>())
+            {
+                var page = (AppearancePage)menu.Navigate("NavAppearance")!;
+                await UiShots.SettleAsync(700);
+                var panel = (WrapPanel)page.FindName("ThemePanel");
+                var target = theme == AppTheme.XyxyDark ? AppTheme.Xyxy : theme;
+                var tile = panel.Children.OfType<Border>().FirstOrDefault(b => b.Tag is AppTheme id &&
+                    (id == target || (target == AppTheme.Xyxy && ThemeService.IsXyxy(id))));
+                if (tile is null)
+                {
+                    Check(false, $"{style} {theme}: tile not found", string.Join(",", panel.Children.OfType<Border>().Select(b => b.Tag?.ToString() ?? "null")));
+                    continue;
+                }
+
+                // Aim like a click: what's under the tile's center gets the mouse-up.
+                var center = tile.TranslatePoint(new Point(tile.ActualWidth / 2, 14), menu);
+                var hit = menu.InputHitTest(center) as DependencyObject;
+                var reaches = hit is not null && (ReferenceEquals(hit, tile) || tile.IsAncestorOf(hit));
+                Check(reaches, $"{style} {theme}: a click on the tile reaches it", $"hit {hit?.GetType().Name}");
+                await ClickAsync(menu, center);
+                await UiShots.SettleAsync(900);
+                if (theme == AppTheme.XyxyDark)
+                {
+                    // Xyxy's tile has Light/Dark chips; pick Dark.
+                    page = (AppearancePage)((System.Windows.Controls.ContentControl)menu.FindName("PageHost")).Content;
+                    var chip = FindText(page, "Dark 🌙");
+                    if (chip is FrameworkElement chipElement)
+                        await ClickAsync(menu, chipElement.TranslatePoint(new Point(chipElement.ActualWidth / 2, chipElement.ActualHeight / 2), menu));
+                    await UiShots.SettleAsync(900);
+                }
+
+                var palette = ThemeService.Get(theme, style);
+                var side = Sample(menu, 4, menu.ActualHeight - 40);
+                var body = Sample(menu, menu.ActualWidth - 30, menu.ActualHeight - 12);
+                Check(App.Settings.Prop.Theme == theme && ThemeService.Current.Id == theme, $"{style} {theme}: selected", $"settings {App.Settings.Prop.Theme}, palette {ThemeService.Current.Id}");
+                Check(Near(side, palette.Sidebar) && Near(body, palette.Background), $"{style} {theme}: open menu repainted",
+                    $"sidebar {Hex(side)} want {Hex(palette.Sidebar)}, page {Hex(body)} want {Hex(palette.Background)}, logo {LogoName(menu, "BrandMark")}");
+                var wantLogo = Path.GetFileNameWithoutExtension(ThemeService.LogoFile(theme) ?? "x-mark.png");
+                Check(LogoName(menu, "BrandMark") == wantLogo, $"{style} {theme}: menu logo {wantLogo}", LogoName(menu, "BrandMark"));
+                UiShots.SaveWindowAs(menu, $"menu-{Tag(theme, style)}.png");
+                var boot = await ShowAsync(new BootstrapperWindow(new LaunchArgs { Mode = LaunchMode.Player }), 1000);
+                var bootBg = Sample(boot, 6, boot.ActualHeight / 2);
+                Check(Near(bootBg, palette.Background) || App.Settings.Prop.BootstrapperStyle == BootstrapperStyle.Classic, $"{style} {theme}: launch window uses the theme",
+                    $"bg {Hex(bootBg)} want {Hex(palette.Background)}, logo {LogoName(boot, "Logo")}");
+                Check(LogoName(boot, "Logo") == wantLogo, $"{style} {theme}: launch logo {wantLogo}", LogoName(boot, "Logo"));
+                UiShots.SaveWindowAs(boot, $"launch-{Tag(theme, style)}.png");
+                boot.Close();
+            }
+        }
+
+        // Leave the profile as it started (Modern + the starting theme) unless asked to keep the last pick.
+        var keep = args.SkipWhile(arg => !arg.Equals("-keep", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        var finalTheme = keep is not null && Enum.TryParse<AppTheme>(keep, true, out var parsed) ? parsed : startTheme;
+        App.Settings.Prop.Theme = finalTheme;
+        App.Settings.Prop.UiStyle = keep is not null ? UiStyle.Classic : UiStyle.Modern;
+        ThemeService.Apply(finalTheme, App.Settings.Prop.UiStyle);
+        App.Save();
+        Note($"saved for the restart check: {finalTheme}/{App.Settings.Prop.UiStyle}");
+        menu.Close();
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr SendMessage(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam);
+
+    /// <summary>
+    /// A click through Windows' own mouse messages to the window (WM_LBUTTONDOWN/UP at a client point), so WPF runs its
+    /// full input path: hit testing, preview handlers, capture, the tile's press animation. The real cursor never moves.
+    /// </summary>
+    private static async Task ClickAsync(Window window, Point point)
+    {
+        // WPF's own route for a left click: MouseDown then MouseUp bubble from the element under the point, and every
+        // element on the way turns them into its MouseLeftButtonDown/Up (what the tile listens to).
+        if (window.InputHitTest(point) is not UIElement target)
+            return;
+        foreach (var (preview, bubble) in new[] { (UIElement.PreviewMouseDownEvent, UIElement.MouseDownEvent), (UIElement.PreviewMouseUpEvent, UIElement.MouseUpEvent) })
+        {
+            var args = new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, System.Windows.Input.MouseButton.Left) { RoutedEvent = preview };
+            target.RaiseEvent(args);
+            var main = new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, System.Windows.Input.MouseButton.Left) { RoutedEvent = bubble, Handled = args.Handled };
+            target.RaiseEvent(main);
+            await UiShots.SettleAsync(110);
+        }
+    }
+
+    private static UIElement? FindText(DependencyObject root, string text)
+    {
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is TextBlock block && block.Text == text)
+                return block;
+            if (FindText(child, text) is { } found)
+                return found;
+        }
+
+        return null;
     }
 
     // ------------------------------------------------------------------ logs
