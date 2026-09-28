@@ -165,7 +165,7 @@ public static class SkyboxService
         {
             var tokens = Path.GetFileNameWithoutExtension(file).ToLowerInvariant()
                 .Split(new[] { '_', '-', ' ', '.', '(', ')' }, StringSplitOptions.RemoveEmptyEntries);
-            var face = tokens.Reverse()
+            var face = Enumerable.Reverse(tokens)
                 .Select(token => aliases.FirstOrDefault(pair => pair.Value.Contains(token)).Key)
                 .FirstOrDefault(key => key is not null);
             if (face is null || result.ContainsKey(face))
