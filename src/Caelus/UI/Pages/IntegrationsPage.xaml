@@ -8,14 +8,20 @@
 
         <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <CheckBox x:Name="DiscordBox" Content="Discord Rich Presence"/>
+                <TextBlock Text="Discord status" Style="{DynamicResource CardTitle}"/>
                 <TextBlock Style="{DynamicResource CardText}" Margin="0,4,0,10"
-                           Text="Shows &quot;Playing on Octane&quot; with the time played on your Discord profile while a game started through X Bootstrapper is open. Discord must be running on this PC. Works out of the box with the built-in X Bootstrapper application."/>
-                <TextBlock Text="Custom Discord application ID (optional)" Style="{DynamicResource FieldLabel}"/>
-                <TextBlock Style="{DynamicResource CardText}" Margin="0,0,0,6"
-                           Text="Leave empty to use the built-in application. If you use your own (discord.com/developers/applications), upload a Rich Presence art asset named &quot;octane&quot; to it for the image."/>
-                <TextBox x:Name="DiscordIdBox"/>
-                <CheckBox x:Name="ActivityBox" Content="Activity tracking: show the place ID in Rich Presence and write it to logs" Margin="0,10,0,0"/>
+                           Text="Discord shows one game status from this PC at a time. Pick whose it is while Octane runs."/>
+                <ComboBox x:Name="DiscordStatusBox"/>
+                <TextBlock x:Name="DiscordStatusHint" Style="{DynamicResource CardText}" Margin="0,8,0,0"/>
+                <StackPanel x:Name="XbDiscordOptions" Margin="0,12,0,0">
+                    <TextBlock Text="Custom Discord application ID (optional)" Style="{DynamicResource FieldLabel}"/>
+                    <TextBlock Style="{DynamicResource CardText}" Margin="0,0,0,6"
+                               Text="Leave empty to use the built-in X Bootstrapper application. The image comes from a web link, so your own application needs no art assets."/>
+                    <TextBox x:Name="DiscordIdBox"/>
+                    <!-- Spans the card's full width (into its padding) so the whole row takes a click. -->
+                    <CheckBox x:Name="ActivityBox" Content="Activity tracking: show the place ID in the status and write it to logs"
+                              Margin="-16,10,-16,0" Padding="16,0,16,0"/>
+                </StackPanel>
             </StackPanel>
         </Border>
 

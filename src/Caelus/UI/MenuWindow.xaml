@@ -75,9 +75,38 @@
                 </Grid>
             </Border>
 
-            <ScrollViewer x:Name="PageScroll" Grid.Row="1" Grid.Column="1" Style="{DynamicResource PageScroller}" VerticalScrollBarVisibility="Auto">
-                <ContentControl x:Name="PageHost" MaxWidth="760" HorizontalAlignment="Left"/>
-            </ScrollViewer>
+            <Grid Grid.Row="1" Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Shown when octane-player:// / octane-studio:// no longer open X Bootstrapper. -->
+                <Grid x:Name="LinkBannerHost" Visibility="Collapsed" Margin="40,18,36,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MaxWidth="760"/>
+                    <ColumnDefinition Width="0"/>
+                </Grid.ColumnDefinitions>
+                <Border x:Name="LinkBanner"
+                        Padding="14,10" BorderThickness="1" CornerRadius="{DynamicResource ControlRadius}"
+                        Background="{DynamicResource AccentSubtleBrush}" BorderBrush="{DynamicResource DangerBrush}">
+                    <DockPanel>
+                        <Button x:Name="FixLinksButton" DockPanel.Dock="Right" Content="Fix links" Style="{DynamicResource AccentButton}"
+                                VerticalAlignment="Center" Margin="12,0,0,0" Click="FixLinks_Click"/>
+                        <TextBlock DockPanel.Dock="Left" Text="&#xE7BA;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="16"
+                                   Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Top" Margin="0,1,10,0"/>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock x:Name="LinkBannerTitle" Text="Play on octane.wtf is skipping X Bootstrapper" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="LinkBannerText" Style="{DynamicResource CardText}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+                </Grid>
+
+                <ScrollViewer x:Name="PageScroll" Grid.Row="1" Style="{DynamicResource PageScroller}" VerticalScrollBarVisibility="Auto">
+                    <ContentControl x:Name="PageHost" MaxWidth="760" HorizontalAlignment="Left"/>
+                </ScrollViewer>
+            </Grid>
 
             <Canvas x:Name="SparkleLayer"
                     Grid.RowSpan="2" Grid.ColumnSpan="2"

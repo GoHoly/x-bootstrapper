@@ -22,6 +22,16 @@
 
         <Border Style="{DynamicResource Card}">
             <StackPanel>
+                <TextBlock Text="Sky" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Style="{DynamicResource CardText}" Margin="0,4,0,12"
+                           Text="Replaces Octane's default sky (games that set their own sky keep theirs). Default puts the client's original sky back exactly. Custom takes six images of any size and converts them."/>
+                <WrapPanel x:Name="SkyPanel"/>
+                <TextBlock x:Name="SkyStatus" Style="{DynamicResource CardText}" Margin="0,2,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{DynamicResource Card}">
+            <StackPanel>
                 <TextBlock Text="Profiles" Style="{DynamicResource CardTitle}"/>
                 <TextBlock Style="{DynamicResource CardText}" Text="Save your current mods under a name and switch between sets. Loading a profile first saves what you had as &quot;Before last load&quot;."
                            Margin="0,4,0,12"/>

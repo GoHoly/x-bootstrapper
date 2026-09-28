@@ -28,12 +28,58 @@ public static class ProtocolService
         // octane-studio:// itself; whichever ran last owns the HKCU key. Before taking a scheme over
         // we remember the official command so joins can be forwarded to it and uninstall can put it back.
         state ??= CurrentState();
-        var exe = File.Exists(Paths.Executable) ? Paths.Executable : Environment.ProcessPath!;
+        var exe = HandlerExecutable;
+        foreach (var link in CheckLinks().Where(link => !link.Healthy))
+            Logger.Write("Protocol", link.Executable is null
+                ? $"{link.Scheme}:// was not registered"
+                : $"{link.Scheme}:// pointed to {link.Executable}; taking it back");
         foreach (var protocol in OwnProtocols)
             RegisterProtocol(protocol, exe, state);
 
         CleanupLegacy(state);
         Logger.Write("Protocol", $"Registered handlers for {exe}");
+    }
+
+    /// <summary>One website link (octane-player / octane-studio) and whether it opens this X Bootstrapper.</summary>
+    public sealed record LinkStatus(string Scheme, string? Command, string? Executable, bool Healthy)
+    {
+        /// <summary>File name of the program the link opens now, or null when the link is missing.</summary>
+        public string? OwnerName => string.IsNullOrWhiteSpace(Executable) ? null : Path.GetFileName(Executable);
+    }
+
+    /// <summary>The program X Bootstrapper registers for its links (the installed copy when there is one).</summary>
+    public static string HandlerExecutable => File.Exists(Paths.Executable) ? Paths.Executable : Environment.ProcessPath!;
+
+    /// <summary>
+    /// Reads both website links. Octane's own launcher (OctanePlayerLauncher.exe) registers itself for them
+    /// whenever it runs, after which Play on octane.wtf skips X Bootstrapper; this shows when that happened.
+    /// A link is healthy only when it opens exactly this X Bootstrapper and that file exists.
+    /// </summary>
+    public static IReadOnlyList<LinkStatus> CheckLinks()
+    {
+        var expected = HandlerExecutable;
+        var list = new List<LinkStatus>();
+        foreach (var scheme in OwnProtocols)
+        {
+            var command = ReadCommand(scheme);
+            var exe = TryGetExecutable(command, out var parsed) ? parsed : null;
+            var healthy = exe is not null && File.Exists(exe) && SamePath(exe, expected);
+            list.Add(new LinkStatus(scheme, command, exe, healthy));
+        }
+
+        return list;
+    }
+
+    private static bool SamePath(string a, string b)
+    {
+        try
+        {
+            return string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>Removes caelus-* / roblox-* handlers that an older version pointed at us.</summary>

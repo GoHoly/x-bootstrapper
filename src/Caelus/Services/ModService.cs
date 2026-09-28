@@ -390,6 +390,9 @@ public static class ModService
         }
     }
 
+    /// <summary>Developer tests only: leave the HUD atlas alone (it keeps its own originals in the client folder).</summary>
+    internal static bool SkipHudPatch { get; set; }
+
     public static int Apply(ClientInstall install, bool log = true)
     {
         if (string.IsNullOrWhiteSpace(install.VersionDirectory) || !Directory.Exists(install.VersionDirectory))
@@ -447,7 +450,8 @@ public static class ModService
 
         try
         {
-            ImageSetHudPatcher.Apply(install.VersionDirectory);
+            if (!SkipHudPatch)
+                ImageSetHudPatcher.Apply(install.VersionDirectory);
         }
         catch (Exception ex)
         {
@@ -554,6 +558,10 @@ public static class ModService
     private static IEnumerable<string> ClientDestinations(string relative)
     {
         yield return relative;
+
+        // The sky only lives in content\textures\sky; mirroring it into ExtraContent would add files the client never had.
+        if (SkyboxService.IsSkyRelative(relative))
+            yield break;
 
         const string prefix = "content\\textures\\";
         if (relative.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||

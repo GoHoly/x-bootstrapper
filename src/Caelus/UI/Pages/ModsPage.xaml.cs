@@ -15,6 +15,214 @@ public partial class ModsPage : System.Windows.Controls.UserControl
         RefreshStatus();
         RefreshProfiles();
         Loaded += (_, _) => RefreshApplied();
+        Loaded += async (_, _) => await RebuildSkyAsync();
+    }
+
+    // ------------------------------------------------------------------ sky
+
+    private static readonly Dictionary<string, string> FaceNames = new()
+    {
+        ["bk"] = "back (bk)",
+        ["dn"] = "bottom (dn)",
+        ["ft"] = "front (ft)",
+        ["lf"] = "left (lf)",
+        ["rt"] = "right (rt)",
+        ["up"] = "top (up)"
+    };
+
+    private bool _skyBusy;
+
+    /// <summary>Builds the sky tiles (Default, the built-ins, Custom) with previews.</summary>
+    internal async Task RebuildSkyAsync()
+    {
+        var current = SkyboxService.CurrentId();
+        var items = new List<(string Id, string Name, string Blurb)> { (SkyboxService.DefaultId, "Default", "Octane's own sky, restored exactly.") };
+        items.AddRange(SkyboxService.BuiltIn.Select(p => (p.Id, p.Name, p.Blurb)));
+        items.Add((SkyboxService.CustomId, "Custom", current == SkyboxService.CustomId ? "Your six images." : "Pick six images (any size)."));
+
+        var previews = await Task.Run(() => items.ToDictionary(item => item.Id, item =>
+        {
+            try
+            {
+                return item.Id == SkyboxService.CustomId && current != SkyboxService.CustomId ? null : SkyboxService.Preview(item.Id, 42);
+            }
+            catch (Exception ex)
+            {
+                Logger.Write("Sky", $"No preview for {item.Id}: {ex.Message}");
+                return null;
+            }
+        }));
+
+        SkyPanel.Children.Clear();
+        foreach (var item in items)
+            SkyPanel.Children.Add(SkyTile(item.Id, item.Name, item.Blurb, previews[item.Id], item.Id == current));
+        if (!_skyBusy)
+            SkyStatus.Text = $"Current sky: {SkyboxService.CurrentName()}.";
+    }
+
+    private UIElement SkyTile(string id, string name, string blurb, System.Windows.Media.ImageSource? preview, bool selected)
+    {
+        var modern = ThemeService.IsModern;
+        var tile = new System.Windows.Controls.Border
+        {
+            Width = 168,
+            Margin = new Thickness(0, 0, 10, 10),
+            Padding = new Thickness(6),
+            CornerRadius = new CornerRadius(modern ? 10 : 4),
+            BorderThickness = new Thickness(selected ? 2 : 1),
+            Cursor = System.Windows.Input.Cursors.Hand,
+            Tag = id
+        };
+        tile.SetResourceReference(System.Windows.Controls.Border.BackgroundProperty, "InputBrush");
+        tile.SetResourceReference(System.Windows.Controls.Border.BorderBrushProperty, selected ? "AccentBrush" : "BorderBrush");
+
+        var art = new System.Windows.Controls.Border
+        {
+            Height = 42,
+            CornerRadius = new CornerRadius(modern ? 6 : 2),
+            ClipToBounds = true
+        };
+        art.SetResourceReference(System.Windows.Controls.Border.BackgroundProperty, "CardBrush");
+        if (preview is not null)
+        {
+            art.Background = new System.Windows.Media.ImageBrush(preview) { Stretch = System.Windows.Media.Stretch.Fill };
+        }
+        else
+        {
+            var plus = new System.Windows.Controls.TextBlock
+            {
+                Text = id == SkyboxService.CustomId ? "+ 6 images" : "no preview",
+                FontSize = 11,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            plus.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, "MutedBrush");
+            art.Child = plus;
+        }
+
+        var title = new System.Windows.Controls.TextBlock
+        {
+            Text = selected ? name + "  ✓" : name,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(2, 7, 2, 0)
+        };
+        var text = new System.Windows.Controls.TextBlock
+        {
+            Text = blurb,
+            FontSize = 11,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(2, 2, 2, 2)
+        };
+        text.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, "MutedBrush");
+
+        var stack = new System.Windows.Controls.StackPanel();
+        stack.Children.Add(art);
+        stack.Children.Add(title);
+        stack.Children.Add(text);
+        tile.Child = stack;
+        tile.MouseLeftButtonUp += async (_, _) =>
+        {
+            if (id == SkyboxService.CustomId)
+                await PickCustomSkyAsync();
+            else
+                await ApplySkyAsync(id);
+        };
+        return tile;
+    }
+
+    /// <summary>What a Default / built-in tile click does.</summary>
+    internal async Task<bool> ApplySkyAsync(string id)
+    {
+        return await RunSkyAsync(id == SkyboxService.DefaultId ? "Restoring the default sky…" : "Making the sky…", () =>
+        {
+            if (id == SkyboxService.DefaultId)
+                SkyboxService.RestoreDefault();
+            else
+                SkyboxService.ApplyBuiltIn(id);
+        });
+    }
+
+    private async Task PickCustomSkyAsync()
+    {
+        using var dialog = new OpenFileDialog
+        {
+            Title = "Choose six sky images (names ending in _bk, _dn, _ft, _lf, _rt, _up), or cancel to pick them one by one",
+            Filter = "Images|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff|All files|*.*",
+            Multiselect = true,
+            CheckFileExists = true
+        };
+        var picked = dialog.ShowDialog() == DialogResult.OK ? dialog.FileNames : Array.Empty<string>();
+        var faces = SkyboxService.MatchFaces(picked, out _);
+
+        // Anything the names didn't place is asked for one face at a time.
+        foreach (var face in SkyboxService.Faces.Where(face => !faces.ContainsKey(face)))
+        {
+            using var single = new OpenFileDialog
+            {
+                Title = $"Choose the {FaceNames[face]} sky image",
+                Filter = dialog.Filter,
+                CheckFileExists = true
+            };
+            if (single.ShowDialog() != DialogResult.OK)
+            {
+                SkyStatus.Text = "Custom sky cancelled; nothing changed.";
+                return;
+            }
+
+            faces[face] = single.FileName;
+        }
+
+        await ApplyCustomSkyAsync(faces);
+    }
+
+    /// <summary>Converts and applies six picked images (face -> file).</summary>
+    internal async Task<bool> ApplyCustomSkyAsync(IReadOnlyDictionary<string, string> images)
+    {
+        Dictionary<string, byte[]> loaded;
+        try
+        {
+            loaded = SkyboxService.LoadCustom(images);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"Could not read those images.\n\n{ex.Message}", AppInfo.Name, MessageBoxButton.OK, MessageBoxImage.Error);
+            return false;
+        }
+
+        var description = string.Join(", ", SkyboxService.Faces.Select(face => Path.GetFileName(images[face])));
+        return await RunSkyAsync("Converting your images…", () => SkyboxService.ApplyCustom(loaded, description));
+    }
+
+    private async Task<bool> RunSkyAsync(string busyText, Action work)
+    {
+        if (_skyBusy)
+            return false;
+
+        _skyBusy = true;
+        SkyPanel.IsEnabled = false;
+        SkyStatus.Text = busyText;
+        try
+        {
+            await Task.Run(work);
+            var running = ClientLocator.RunningIds(ClientLocator.PlayerProcessNames).Count > 0;
+            SkyStatus.Text = $"Sky set to {SkyboxService.CurrentName()}." +
+                             (running ? " Octane is running: restart it to see the change." : " It shows the next time Octane starts.");
+            RefreshStatus();
+            RefreshApplied();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Sky", ex);
+            SkyStatus.Text = $"Could not change the sky: {ex.Message}";
+            return false;
+        }
+        finally
+        {
+            _skyBusy = false;
+            SkyPanel.IsEnabled = true;
+            await RebuildSkyAsync();
+        }
     }
 
     private void RefreshProfiles(string? select = null)

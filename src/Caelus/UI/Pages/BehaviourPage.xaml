@@ -6,12 +6,21 @@
         <TextBlock Text="How X Bootstrapper launches, and whether it hangs around after."
                    Style="{DynamicResource PageSubtitle}"/>
 
+        <!-- Toggles span the card's full width (into its padding) so the whole row takes a click. -->
         <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <CheckBox x:Name="AppUpdatesBox" Content="Auto-update X Bootstrapper from GitHub (or pick a version in Install)"/>
-                <CheckBox x:Name="ConfirmBox" Content="Ask before launching"/>
-                <CheckBox x:Name="StayBox" Content="Keep X Bootstrapper open after the client starts"/>
-                <CheckBox x:Name="TrayBox" Content="Show a tray icon while the game is running (Open settings, Open logs, Exit)"/>
+                <TextBlock Text="When you close X Bootstrapper" Style="{DynamicResource CardTitle}"/>
+                <CheckBox x:Name="BackgroundBox" Content="Keep running in the background after closing" Margin="-16,10,-16,0" Padding="16,0,16,0"/>
+                <TextBlock x:Name="BackgroundHint" Style="{DynamicResource CardText}" Margin="0,4,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{DynamicResource Card}">
+            <StackPanel>
+                <CheckBox x:Name="AppUpdatesBox" Content="Auto-update X Bootstrapper from GitHub (or pick a version in Install)" Margin="-16,0,-16,0" Padding="16,0,16,0"/>
+                <CheckBox x:Name="ConfirmBox" Content="Ask before launching" Margin="-16,0,-16,0" Padding="16,0,16,0"/>
+                <CheckBox x:Name="StayBox" Content="Keep X Bootstrapper open after the client starts" Margin="-16,0,-16,0" Padding="16,0,16,0"/>
+                <CheckBox x:Name="TrayBox" Content="Show a tray icon while the game is running (Open settings, Open logs, Exit)" Margin="-16,0,-16,0" Padding="16,0,16,0"/>
             </StackPanel>
         </Border>
     </StackPanel>

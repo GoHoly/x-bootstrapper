@@ -85,22 +85,102 @@ public partial class App : System.Windows.Application
                 return;
             if (Session is not null)
                 return;
+            if (ShouldStayInBackground((App)app))
+            {
+                EnterBackground();
+                return;
+            }
+
+            Logger.Write("App", "No window open and nothing running: exiting.");
             app.Shutdown();
         }, System.Windows.Threading.DispatcherPriority.Background);
+    }
+
+    /// <summary>True while the menu is closed but "Keep running in the background" holds the process in the tray.</summary>
+    public static bool InBackground { get; private set; }
+
+    private static System.Windows.Threading.DispatcherTimer? _backgroundTimer;
+
+    /// <summary>Only the process that owns the menu stays in the background, and only with the setting on.</summary>
+    private static bool ShouldStayInBackground(App app) =>
+        Settings?.Prop.KeepRunningInBackground == true && app._mutex is not null &&
+        (!UiShots.Active || UiShots.AllowBackground);
+
+    private static void EnterBackground()
+    {
+        if (!InBackground)
+            Logger.Write("App", "Menu closed; staying in the background (Keep running in the background is on).");
+        InBackground = true;
+        TrayService.Show("running in the background");
+        if (_backgroundTimer is null)
+        {
+            _backgroundTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+            _backgroundTimer.Tick += (_, _) => WatchLinksInBackground();
+        }
+
+        _backgroundTimer.Start();
+        WatchLinksInBackground();
+    }
+
+    private static void LeaveBackground()
+    {
+        if (!InBackground)
+            return;
+        InBackground = false;
+        _backgroundTimer?.Stop();
+        if (Session is null)
+            TrayService.Hide();
+    }
+
+    /// <summary>In the background, puts the website links back when Octane's launcher took them.</summary>
+    private static void WatchLinksInBackground()
+    {
+        if (!InBackground || !Settings.Prop.RegisterWebsiteProtocol || !InstallerService.IsInstalled(Settings.Prop) || UiShots.Active)
+            return;
+
+        try
+        {
+            if (ProtocolService.CheckLinks().All(link => link.Healthy))
+                return;
+            ProtocolService.Register(Settings.Prop, State.Prop);
+            State.Save();
+            Logger.Write("Protocol", "Took the website links back while running in the background.");
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("Protocol", ex);
+        }
     }
 
     private void StartupCore(StartupEventArgs e)
     {
         Args = LaunchArgs.Parse(e.Args);
         Native.SetAppUserModelId();
-        Paths.Initialize(InstallerService.PrepareInstallDirectory());
+        // -devbase <folder>: developer tests run against a throwaway profile folder instead of the real one.
+        var devBase = ArgValue(e.Args, "-devbase");
+        Paths.Initialize(devBase ?? InstallerService.PrepareInstallDirectory());
         try { Environment.CurrentDirectory = Paths.Base; } catch { /* keep the process cwd if Windows refuses */ }
         Logger.Initialize();
         Settings = new JsonStore<Settings>(Paths.Settings);
         State = new JsonStore<AppState>(Paths.State);
+        // No settings file (and no backup) yet means this run creates the profile: a new user.
+        FreshProfile = !File.Exists(Paths.Settings) && !File.Exists(Paths.Settings + ".bak");
         Settings.Load();
         State.Load();
+        if (FreshProfile)
+        {
+            Settings.Prop.SetupPending = true;
+            Settings.Save();
+        }
         Logger.Write("App", $"Args: {string.Join(' ', e.Args.Select(RedactArg))}");
+
+        // -quit: asks a copy running in the background (or with the menu open) to exit, then exits itself.
+        if (e.Args.Any(arg => arg.Equals("-quit", StringComparison.OrdinalIgnoreCase)))
+        {
+            SignalEvent(MenuQuitEventName);
+            Shutdown();
+            return;
+        }
 
         if (!string.IsNullOrWhiteSpace(Settings.Prop.InstallLocation) &&
             !Paths.IsLegacyDefault(Settings.Prop.InstallLocation) &&
@@ -130,6 +210,13 @@ public partial class App : System.Windows.Application
             return;
         }
 
+        var devTest = Array.FindIndex(e.Args, arg => arg.Equals("-devtest", StringComparison.OrdinalIgnoreCase));
+        if (devTest >= 0 && devTest + 2 < e.Args.Length)
+        {
+            _ = DevTests.RunAsync(e.Args[devTest + 1], e.Args[devTest + 2], e.Args);
+            return;
+        }
+
         if (toggle >= 0)
         {
             var persist = Array.FindIndex(e.Args, arg => arg.Equals("-persist", StringComparison.OrdinalIgnoreCase));
@@ -148,6 +235,8 @@ public partial class App : System.Windows.Application
             _ = UiShots.RunAsync(shots + 1 < e.Args.Length ? e.Args[shots + 1] : Path.Combine(Paths.Base, "ui-shots"));
             return;
         }
+
+        TrackVersion();
 
         try
         {
@@ -249,6 +338,49 @@ public partial class App : System.Windows.Application
             _ = AppUpdateService.CheckInBackgroundAsync(Args);
     }
 
+    /// <summary>True when this run created the settings file (a new user): first-run setup, no What's new.</summary>
+    public static bool FreshProfile { get; private set; }
+
+    private static string? ArgValue(string[] args, string name)
+    {
+        var index = Array.FindIndex(args, arg => arg.Equals(name, StringComparison.OrdinalIgnoreCase));
+        return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
+    }
+
+    /// <summary>
+    /// Notices an update: the last version that ran is older than this one (or missing, for 2.2.1 and older
+    /// with an existing profile). Then What's new is due once for this version, next time the menu opens.
+    /// </summary>
+    public static void TrackVersion()
+    {
+        var state = State.Prop;
+        var previous = state.LastRunVersion;
+        if (previous is not null && AppUpdateService.SameVersion(previous, AppInfo.Version))
+            return;
+
+        var upgraded = previous is null ? !FreshProfile : AppUpdateService.IsNewer(AppInfo.Version, previous);
+        if (upgraded && !string.Equals(state.WhatsNewShownVersion, AppInfo.Version, StringComparison.OrdinalIgnoreCase))
+            state.WhatsNewPendingVersion = AppInfo.Version;
+        Logger.Write("App", previous is null
+            ? $"First run of {AppInfo.Version}{(FreshProfile ? " (new profile)" : " (updated from 2.2.1 or older)")}"
+            : $"Version changed {previous} -> {AppInfo.Version}");
+        state.LastRunVersion = AppInfo.Version;
+        State.Save();
+    }
+
+    /// <summary>What's new should open with the menu: an update was noticed and it wasn't shown or turned off.</summary>
+    public static bool WhatsNewDue =>
+        Settings.Prop.ShowWhatsNew &&
+        string.Equals(State.Prop.WhatsNewPendingVersion, AppInfo.Version, StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(State.Prop.WhatsNewShownVersion, AppInfo.Version, StringComparison.OrdinalIgnoreCase);
+
+    public static void MarkWhatsNewShown()
+    {
+        State.Prop.WhatsNewShownVersion = AppInfo.Version;
+        State.Prop.WhatsNewPendingVersion = null;
+        Save();
+    }
+
     private static string RedactArg(string arg)
     {
         if (!LaunchArgs.IsProtocol(arg))
@@ -281,6 +413,7 @@ public partial class App : System.Windows.Application
 
     private const string MenuMutexName = "XBootstrapperMenu";
     private const string MenuShowEventName = "XBootstrapperMenu.Show";
+    private const string MenuQuitEventName = "XBootstrapperMenu.Quit";
 
     /// <summary>
     /// Opens the settings menu. Only one menu exists across processes: if another process already
@@ -303,6 +436,7 @@ public partial class App : System.Windows.Application
             app.ListenForMenuRequests();
         }
 
+        LeaveBackground();
         var existing = Current.Windows.OfType<MenuWindow>().FirstOrDefault();
         if (existing is not null)
         {
@@ -316,11 +450,13 @@ public partial class App : System.Windows.Application
         new MenuWindow().Show();
     }
 
-    private static void SignalExistingMenu()
+    private static void SignalExistingMenu() => SignalEvent(MenuShowEventName);
+
+    private static void SignalEvent(string name)
     {
         try
         {
-            if (EventWaitHandle.TryOpenExisting(MenuShowEventName, out var handle))
+            if (EventWaitHandle.TryOpenExisting(name, out var handle))
             {
                 using (handle)
                     handle.Set();
@@ -334,20 +470,30 @@ public partial class App : System.Windows.Application
 
     private void ListenForMenuRequests()
     {
+        Listen(MenuShowEventName, ShowMenu);
+        Listen(MenuQuitEventName, () =>
+        {
+            Logger.Write("App", "Asked to exit by another X Bootstrapper process (-quit).");
+            ExitFromTray();
+        });
+    }
+
+    private void Listen(string eventName, Action action)
+    {
         try
         {
-            var handle = new EventWaitHandle(false, EventResetMode.AutoReset, MenuShowEventName);
+            var handle = new EventWaitHandle(false, EventResetMode.AutoReset, eventName);
             var thread = new Thread(() =>
             {
                 while (true)
                 {
                     handle.WaitOne();
-                    Dispatcher.BeginInvoke(ShowMenu);
+                    Dispatcher.BeginInvoke(action);
                 }
             })
             {
                 IsBackground = true,
-                Name = "MenuShowListener"
+                Name = eventName + " listener"
             };
             thread.Start();
         }
@@ -360,7 +506,16 @@ public partial class App : System.Windows.Application
     /// <summary>Keeps the process alive in the background until the launched client closes.</summary>
     public static void StartSession(GameSession session)
     {
-        EndSession();
+        // Only end a previous session: the Discord connection opened at launch (PrepareDiscord) must survive
+        // into this one, or Octane's own status connects first and wins (2.2.1 dropped and reopened it here).
+        if (Session is not null)
+            EndSession();
+        if (InBackground)
+        {
+            InBackground = false;
+            _backgroundTimer?.Stop();
+        }
+
         Session = session;
         session.Ended += () =>
         {
@@ -374,20 +529,53 @@ public partial class App : System.Windows.Application
 
         IntegrationService.Start(s.Integrations);
 
-        if (s.DiscordRichPresence)
+        if (s.EffectiveDiscordStatus == DiscordStatusMode.XBootstrapper)
             _ = StartPresenceAsync(session);
+        else
+            Logger.Write("Discord", DescribeStatusChoice(s.EffectiveDiscordStatus));
 
         // We hand the join link to OctanePlayerLauncher.exe, which registers itself for octane-player://
         // and octane-studio:// again when it runs; the next Play on octane.wtf then skipped X Bootstrapper
         // (no presence, no FastFlags). Take the links back once the client is up.
-        _ = ReclaimProtocolsAsync(session);
+        // With "Keep running in the background" off, stay only as long as something needs the game: X Bootstrapper's
+        // Discord status or programs to close with the game hold the whole session; otherwise only the link retake.
+        var holdWholeSession = NeedsWholeSession(s);
+        Logger.Write("Session", holdWholeSession
+            ? "Staying until the game closes (" + WhyHold(s) + ")."
+            : "Nothing needs the whole game session; exiting after the website links are taken back.");
+        _ = ReclaimProtocolsAsync(session, detach: !holdWholeSession);
     }
 
-    private static async Task ReclaimProtocolsAsync(GameSession session)
+    public static bool NeedsWholeSession(Settings s) =>
+        s.KeepRunningInBackground ||
+        s.EffectiveDiscordStatus == DiscordStatusMode.XBootstrapper ||
+        s.Integrations.Any(item => item.Enabled && item.AutoClose && !string.IsNullOrWhiteSpace(item.Path));
+
+    private static string WhyHold(Settings s)
     {
-        await Task.Delay(TimeSpan.FromSeconds(15));
-        if (ReferenceEquals(Session, session))
-            ReclaimProtocols();
+        var reasons = new List<string>();
+        if (s.EffectiveDiscordStatus == DiscordStatusMode.XBootstrapper) reasons.Add("X Bootstrapper's Discord status");
+        if (s.Integrations.Any(item => item.Enabled && item.AutoClose && !string.IsNullOrWhiteSpace(item.Path))) reasons.Add("programs to close with the game");
+        if (s.KeepRunningInBackground) reasons.Add("keep running in the background is on");
+        return string.Join(", ", reasons);
+    }
+
+    /// <summary>Seconds after the client starts before the links are taken back (the launcher re-registers them as it runs).</summary>
+    internal static TimeSpan ReclaimDelay { get; set; } = TimeSpan.FromSeconds(15);
+
+    private static async Task ReclaimProtocolsAsync(GameSession session, bool detach)
+    {
+        await Task.Delay(ReclaimDelay);
+        if (!ReferenceEquals(Session, session))
+            return;
+
+        ReclaimProtocols();
+        if (detach)
+        {
+            // The game keeps running; this process just stops waiting for it.
+            Logger.Write("Session", "Links taken back; X Bootstrapper exits while Octane keeps running.");
+            EndSession();
+        }
     }
 
     private static void ReclaimProtocols()
@@ -418,8 +606,13 @@ public partial class App : System.Windows.Application
     /// </summary>
     public static void PrepareDiscord(bool studio)
     {
-        if (!Settings.Prop.DiscordRichPresence || UiShots.Active)
+        if (UiShots.Active && !UiShots.AllowDiscord)
             return;
+        if (Settings.Prop.EffectiveDiscordStatus != DiscordStatusMode.XBootstrapper)
+        {
+            Logger.Write("Discord", DescribeStatusChoice(Settings.Prop.EffectiveDiscordStatus));
+            return;
+        }
 
         _ = PrepareDiscordAsync(studio);
     }
@@ -443,6 +636,13 @@ public partial class App : System.Windows.Application
             Logger.Write("Discord", $"Rich Presence failed: {ex.Message}");
         }
     }
+
+    private static string DescribeStatusChoice(DiscordStatusMode mode) => mode switch
+    {
+        DiscordStatusMode.Octane => "Discord status is set to Octane's own: X Bootstrapper does not connect, so the Octane client's status shows.",
+        DiscordStatusMode.None => "Discord status is set to None: X Bootstrapper does not connect (the Octane client may still set its own).",
+        _ => "Discord status: X Bootstrapper"
+    };
 
     /// <summary>Drops a connection opened for a launch that was cancelled or failed.</summary>
     public static void ReleaseDiscord()

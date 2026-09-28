@@ -12,6 +12,10 @@ public partial class BehaviourPage : System.Windows.Controls.UserControl
         ConfirmBox.IsChecked = s.ConfirmLaunches;
         StayBox.IsChecked = s.StayOpenAfterLaunch;
         TrayBox.IsChecked = s.ShowTrayIcon;
+        BackgroundBox.IsChecked = s.KeepRunningInBackground;
+        BackgroundHint.Text = UiText.BackgroundHint;
+        BackgroundBox.Checked += (_, _) => Write();
+        BackgroundBox.Unchecked += (_, _) => Write();
         TrayBox.Checked += (_, _) => Write();
         TrayBox.Unchecked += (_, _) => Write();
         AppUpdatesBox.Checked += (_, _) => Write();
@@ -29,6 +33,7 @@ public partial class BehaviourPage : System.Windows.Controls.UserControl
         s.ConfirmLaunches = ConfirmBox.IsChecked == true;
         s.StayOpenAfterLaunch = StayBox.IsChecked == true;
         s.ShowTrayIcon = TrayBox.IsChecked == true;
+        s.KeepRunningInBackground = BackgroundBox.IsChecked == true;
         App.Save();
     }
 }

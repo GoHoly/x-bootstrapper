@@ -240,8 +240,31 @@ internal static class UiShots
         await Settle(300);
     }
 
-    /// <summary>Lets <see cref="PersistAsync"/> write the settings file during the toggle test.</summary>
-    public static bool AllowSave { get; private set; }
+    /// <summary>Lets <see cref="PersistAsync"/> (and the developer tests) write the settings file.</summary>
+    public static bool AllowSave { get; internal set; }
+
+    /// <summary>Developer tests: allow Discord connections, background mode, and link warnings for a non-installed copy.</summary>
+    public static bool AllowDiscord { get; internal set; }
+    public static bool AllowBackground { get; internal set; }
+    public static bool CheckLinksAnyway { get; internal set; }
+
+    /// <summary>Developer tests reuse this mode's guards (no saving by default, no stray exits).</summary>
+    internal static void BeginDev(string dir)
+    {
+        Active = true;
+        _dir = dir;
+        Directory.CreateDirectory(dir);
+    }
+
+    internal static void SetAllowExit(bool allow) => AllowExit = allow;
+
+    internal static Task SettleAsync(int ms) => Settle(ms);
+
+    internal static void SaveWindowAs(Window window, string file) => SaveWindow(window, file);
+
+    internal static void SaveElementAs(FrameworkElement element, string file, double pad = 16) => SaveElement(element, file, pad);
+
+    internal static void PlaceOffscreen(Window window) => Offscreen(window);
 
     private static string Where(Window window, ContentControl host)
     {

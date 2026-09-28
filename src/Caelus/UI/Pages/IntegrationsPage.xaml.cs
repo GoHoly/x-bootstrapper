@@ -20,12 +20,18 @@ public partial class IntegrationsPage : System.Windows.Controls.UserControl
     {
         InitializeComponent();
         var s = App.Settings.Prop;
-        DiscordBox.IsChecked = s.DiscordRichPresence;
+        foreach (var choice in UiText.DiscordChoices)
+            DiscordStatusBox.Items.Add(new ComboBoxItem { Content = choice });
+        DiscordStatusBox.SelectedIndex = (int)s.EffectiveDiscordStatus;
+        ShowDiscordHint();
+        DiscordStatusBox.SelectionChanged += (_, _) =>
+        {
+            ShowDiscordHint();
+            Write();
+        };
         // The built-in ID is shown as an empty box ("use the default").
         DiscordIdBox.Text = s.DiscordClientId?.Trim() == AppInfo.DiscordClientId ? "" : s.DiscordClientId;
         ActivityBox.IsChecked = s.ActivityTracking;
-        DiscordBox.Checked += (_, _) => Write();
-        DiscordBox.Unchecked += (_, _) => Write();
         ActivityBox.Checked += (_, _) => Write();
         ActivityBox.Unchecked += (_, _) => Write();
         DiscordIdBox.LostFocus += (_, _) => Write();
@@ -136,6 +142,16 @@ public partial class IntegrationsPage : System.Windows.Controls.UserControl
         return label;
     }
 
+    private DiscordStatusMode SelectedStatus =>
+        DiscordStatusBox.SelectedIndex is >= 0 and <= 2 ? (DiscordStatusMode)DiscordStatusBox.SelectedIndex : DiscordStatusMode.XBootstrapper;
+
+    private void ShowDiscordHint()
+    {
+        DiscordStatusHint.Text = UiText.DiscordHint(SelectedStatus);
+        // The application ID and place sharing only matter while X Bootstrapper sets the status.
+        XbDiscordOptions.Visibility = SelectedStatus == DiscordStatusMode.XBootstrapper ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     private void UpdateEmpty() => EmptyText.Visibility = _rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
     private void Write()
@@ -144,7 +160,7 @@ public partial class IntegrationsPage : System.Windows.Controls.UserControl
             return;
 
         var s = App.Settings.Prop;
-        s.DiscordRichPresence = DiscordBox.IsChecked == true;
+        s.SetDiscordStatus(SelectedStatus);
         s.DiscordClientId = DiscordIdBox.Text.Trim();
         s.ActivityTracking = ActivityBox.IsChecked == true;
         s.Integrations = _rows

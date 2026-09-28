@@ -27,6 +27,17 @@ public enum UiStyle
     Classic
 }
 
+/// <summary>Whose Discord status shows while Octane runs (Discord displays one local Rich Presence at a time).</summary>
+public enum DiscordStatusMode
+{
+    // X Bootstrapper connects as the launch starts, so its status is the one Discord shows (2.2.1 behavior).
+    XBootstrapper,
+    // X Bootstrapper stays off Discord, so the Octane client's own "Playing Octane" shows.
+    Octane,
+    // X Bootstrapper stays off Discord. It cannot turn off the status the Octane client sets itself.
+    None
+}
+
 public enum RenderingMode
 {
     Automatic,
@@ -53,7 +64,21 @@ public sealed class Settings
     public bool StayOpenAfterLaunch { get; set; }
     public bool RegisterWebsiteProtocol { get; set; } = true;
 
+    // Kept in step with DiscordStatus (true only for X Bootstrapper status) so older versions read it right.
     public bool DiscordRichPresence { get; set; } = true;
+    // Missing in settings from 2.2.1 and older: derived from DiscordRichPresence (on = X Bootstrapper status,
+    // off = Octane's own, which is what "off" did), so upgrading changes nothing.
+    public DiscordStatusMode? DiscordStatus { get; set; }
+
+    [JsonIgnore]
+    public DiscordStatusMode EffectiveDiscordStatus =>
+        DiscordStatus ?? (DiscordRichPresence ? DiscordStatusMode.XBootstrapper : DiscordStatusMode.Octane);
+
+    public void SetDiscordStatus(DiscordStatusMode mode)
+    {
+        DiscordStatus = mode;
+        DiscordRichPresence = mode == DiscordStatusMode.XBootstrapper;
+    }
     // Optional override. Empty or whitespace means the built-in X Bootstrapper application (AppInfo.DiscordClientId).
     public string DiscordClientId { get; set; } = "";
 
@@ -77,6 +102,15 @@ public sealed class Settings
     // Programs started with the game and optionally closed when it exits.
     public List<Integration> Integrations { get; set; } = new();
     public bool ShowTrayIcon { get; set; } = true;
+    // Off: closing the menu ends the process (a launch helper stays only while a game needs it).
+    // On: closing hides X Bootstrapper to the tray, where it keeps the website links pointed at itself.
+    public bool KeepRunningInBackground { get; set; }
+
+    // Set only when this profile was created by this run (no settings file yet): shows the first-run setup
+    // once. Missing (false) for everyone who already had settings.
+    public bool SetupPending { get; set; }
+    // "Don't show again" on the What's new popup.
+    public bool ShowWhatsNew { get; set; } = true;
 
     [JsonIgnore]
     public bool HasCustomClient => !string.IsNullOrWhiteSpace(ClientDirectory);
@@ -104,4 +138,9 @@ public sealed class AppState
     public Dictionary<string, string> OfficialProtocolHandlers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     // FastFlag keys X Bootstrapper wrote last time, so flags you delete are removed from the client too.
     public List<string> WrittenFlagKeys { get; set; } = new();
+    // Version that last started (missing before 2.3.0). A newer build than this one = an update happened.
+    public string? LastRunVersion { get; set; }
+    // What's new is due for this version (set when an update is detected) and was shown for that one.
+    public string? WhatsNewPendingVersion { get; set; }
+    public string? WhatsNewShownVersion { get; set; }
 }

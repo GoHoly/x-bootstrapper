@@ -207,6 +207,24 @@ public sealed class ModBackupStore
 
     private string BackupPath(string relative) => Path.Combine(OriginalsDir, relative);
 
+    /// <summary>
+    /// The client's own copy of a file: the backed-up original while a mod replaces it, otherwise the file in
+    /// the client folder. Null when neither exists.
+    /// </summary>
+    public string? OriginalFile(string relative)
+    {
+        if (_manifest.Files.TryGetValue(relative, out var entry))
+        {
+            if (!entry.HadOriginal)
+                return null;
+            var backup = BackupPath(relative);
+            return File.Exists(backup) ? backup : null;
+        }
+
+        var target = MatchExistingName(Path.Combine(VersionDirectory, relative));
+        return File.Exists(target) ? target : null;
+    }
+
     private static string Key(string versionDirectory)
     {
         var bytes = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(versionDirectory.ToLowerInvariant()));
