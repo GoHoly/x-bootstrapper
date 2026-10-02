@@ -260,9 +260,9 @@ public sealed class ModBackupStore
                 File.Copy(source, destination, overwrite: true);
                 return;
             }
-            catch (IOException) when (attempt < 3)
+            catch (IOException) when (attempt < 8)
             {
-                Thread.Sleep(60);
+                Thread.Sleep(80 + attempt * 40);
             }
         }
     }

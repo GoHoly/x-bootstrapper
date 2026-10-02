@@ -3,7 +3,7 @@ namespace Caelus.Core;
 public static class AppInfo
 {
     public const string Name = "X Bootstrapper";
-    public const string Version = "2.3.4";
+    public const string Version = "2.4.0";
     public const string Website = "https://octane.wtf";
     public const string Discord = "https://discord.com/invite/octanee";
     // Public Discord application "X BootStrapper For Octane" used for Rich Presence (not a secret).

@@ -1,7 +1,12 @@
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using System.Windows.Media.Imaging;
 using Caelus.Core;
+using Caelus.Models;
+using Caelus.UI;
 
 namespace Caelus.Services;
 
@@ -12,6 +17,7 @@ namespace Caelus.Services;
 internal static class TrayService
 {
     private static NotifyIcon? _icon;
+    private static Icon? _themeIcon;
 
     public static void Show(string status)
     {
@@ -27,7 +33,7 @@ internal static class TrayService
 
                 _icon = new NotifyIcon
                 {
-                    Icon = LoadIcon(),
+                    Icon = LoadThemeIcon(),
                     ContextMenuStrip = menu
                 };
                 _icon.DoubleClick += (_, _) => App.ShowMenu();
@@ -41,6 +47,22 @@ internal static class TrayService
         catch (Exception ex)
         {
             Logger.Write("Tray", $"Tray icon unavailable: {ex.Message}");
+        }
+    }
+
+    /// <summary>Swap the tray glyph when Appearance changes theme (same logos as the in-app mark).</summary>
+    public static void ApplyThemeIcon()
+    {
+        if (_icon is null)
+            return;
+
+        try
+        {
+            _icon.Icon = LoadThemeIcon();
+        }
+        catch (Exception ex)
+        {
+            Logger.Write("Tray", $"Could not refresh tray icon: {ex.Message}");
         }
     }
 
@@ -61,6 +83,7 @@ internal static class TrayService
         }
 
         _icon = null;
+        DisposeThemeIcon();
     }
 
     private static void OpenLogs()
@@ -79,7 +102,30 @@ internal static class TrayService
         }
     }
 
-    private static Icon LoadIcon()
+    private static Icon LoadThemeIcon()
+    {
+        DisposeThemeIcon();
+        try
+        {
+            _themeIcon = CreateIconFromLogo(ThemeService.Current.Id);
+            if (_themeIcon is not null)
+                return _themeIcon;
+        }
+        catch
+        {
+            /* fall back to exe icon */
+        }
+
+        return LoadExeIcon();
+    }
+
+    private static void DisposeThemeIcon()
+    {
+        _themeIcon?.Dispose();
+        _themeIcon = null;
+    }
+
+    private static Icon LoadExeIcon()
     {
         try
         {
@@ -94,4 +140,39 @@ internal static class TrayService
 
         return SystemIcons.Application;
     }
+
+    /// <summary>Build a WinForms Icon from the theme's pack PNG so tray matches taskbar / in-app logo.</summary>
+    private static Icon? CreateIconFromLogo(AppTheme theme)
+    {
+        var source = ThemeService.Logo(theme);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(source));
+        using var png = new MemoryStream();
+        encoder.Save(png);
+        png.Position = 0;
+
+        using var bitmap = new Bitmap(png);
+        using var sized = new Bitmap(32, 32, PixelFormat.Format32bppArgb);
+        using (var g = Graphics.FromImage(sized))
+        {
+            g.Clear(Color.Transparent);
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+            g.DrawImage(bitmap, 0, 0, 32, 32);
+        }
+
+        var handle = sized.GetHicon();
+        try
+        {
+            // Clone so DestroyIcon can free the temporary HICON without invalidating our Icon.
+            using var temp = Icon.FromHandle(handle);
+            return (Icon)temp.Clone();
+        }
+        finally
+        {
+            DestroyIcon(handle);
+        }
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern bool DestroyIcon(IntPtr handle);
 }

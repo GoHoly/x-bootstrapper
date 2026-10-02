@@ -1,12 +1,16 @@
-X Bootstrapper 2.3.4 shows the game name in Discord Rich Presence.
+X Bootstrapper 2.4.0 — Halloween theme, mod presets, atmosphere mods, and reliable FastFlags.
 
-## Fixed
-- **Discord status shows the place name.** While you play, Rich Presence used to say `Place 52645`. It now looks the title up from Octane (`games.octane.wtf`) and shows that instead (for example `octane housing[OPEN TEST]`). Until the name arrives, or if the lookup fails, it still falls back to the place ID. Turned off with **Integrations → Activity tracking**
+## New
+- **Halloween theme (default).** Charcoal UI with pumpkin-orange accents and the dripping neon X logo. Orange candy bursts match the buttons; the taskbar / tray icon follows whichever theme you pick. Midnight and every other theme stay on Appearance
+- **Mod presets.** Built-in starters (Stock, Sunset / Night / Nebula / Clear day sky) plus save/load of your full Modifications set (sky, atmosphere, HUD, sounds…)
+- **Atmosphere mods.** Clouds, sun/moon, particles, water packs, indoor sky, and Replace client file — with thumbnails, Play for sounds, and particle previews
+- **Custom sky editor.** Upload six faces with a 3D look-around preview
+- **Reliable sky apply.** Re-copies sky while Octane's launcher starts so stock files cannot silently win
 
-## Also in 2.3.3
-Windows App Beta launch support (`--app` / Behaviour toggle / `-app`). Octane's current client often lacks App Beta; X Bootstrapper explains that instead of opening a white screen.
+## Fixed / improved
+- **Automatic renderer prefers Direct3D 11** on the 2021 client; unlimited FPS clears the 240 cap; WrittenFlagKeys save after apply
+- **Discord status shows the place name** from Octane, not only `Place {id}`
+- App Beta launch path when the client supports `--app`
 
-## Also in 2.3
-Theme logos, sky picker, Discord status choice, website-link health warning, Copy logs, first-run setup, What's new, and exit-on-close by default.
-
-Existing installs update automatically from GitHub Releases. New users: download **X.Bootstrapper.Setup.exe**. No administrator account is required.
+## Install
+Download **X.Bootstrapper.Setup.exe** and run it (no admin). You still need Octane from [octane.wtf](https://octane.wtf) first.

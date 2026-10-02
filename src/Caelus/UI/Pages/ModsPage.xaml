@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel>
         <TextBlock Text="Mods" Style="{DynamicResource PageTitle}"/>
-        <TextBlock Text="Drop in a whole UI pack, or replace one file at a time. X Bootstrapper copies them onto the 2021 client when Octane starts."
+        <TextBlock Text="Drop in a whole UI pack, or replace one file at a time. Thumbnails and Play/Preview let you check sounds and textures before you rejoin. X Bootstrapper copies them onto the 2021 client when Octane starts."
                    Style="{DynamicResource PageSubtitle}"/>
 
         <Border Style="{DynamicResource Card}">
@@ -22,9 +22,32 @@
 
         <Border Style="{DynamicResource Card}">
             <StackPanel>
+                <TextBlock Text="Presets" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Style="{DynamicResource CardText}" Margin="0,4,0,12"
+                           Text="Built-in starters wipe to a clean sky (or stock). Your presets save everything — sky, atmosphere, HUD, sounds — so you can switch whole looks. Loading always backs up what you had as &quot;Before last load&quot;."/>
+                <TextBlock Text="BUILT-IN" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,8"
+                           Foreground="{DynamicResource MutedBrush}"/>
+                <WrapPanel x:Name="BuiltInPresetsPanel" Margin="0,0,0,14"/>
+                <TextBlock Text="YOUR PRESETS" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,8"
+                           Foreground="{DynamicResource MutedBrush}"/>
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Delete" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="DeleteProfile_Click"/>
+                    <Button DockPanel.Dock="Right" Content="Load" Style="{DynamicResource AccentButton}" Margin="8,0,0,0" Click="LoadProfile_Click"/>
+                    <ComboBox x:Name="ProfileBox"/>
+                </DockPanel>
+                <DockPanel Margin="0,10,0,0">
+                    <Button DockPanel.Dock="Right" Content="Save current mods" Style="{DynamicResource AccentButton}" Margin="8,0,0,0" Click="SaveProfile_Click"/>
+                    <TextBox x:Name="ProfileNameBox" ToolTip="Name for this preset (sky + all mods)"/>
+                </DockPanel>
+                <TextBlock x:Name="PresetStatus" Style="{DynamicResource CardText}" Margin="0,10,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <Border Style="{DynamicResource Card}">
+            <StackPanel>
                 <TextBlock Text="Sky" Style="{DynamicResource CardTitle}"/>
                 <TextBlock Style="{DynamicResource CardText}" Margin="0,4,0,12"
-                           Text="Replaces Octane's default sky (games that set their own sky keep theirs). Default puts the client's original sky back exactly. Custom takes six images of any size and converts them."/>
+                           Text="Replaces Octane's default sky (games that set their own sky keep theirs). Default puts the client's original sky back exactly. Custom opens a window to upload the six faces with a 3D preview."/>
                 <WrapPanel x:Name="SkyPanel"/>
                 <TextBlock x:Name="SkyStatus" Style="{DynamicResource CardText}" Margin="0,2,0,0"/>
             </StackPanel>
@@ -32,18 +55,22 @@
 
         <Border Style="{DynamicResource Card}">
             <StackPanel>
-                <TextBlock Text="Profiles" Style="{DynamicResource CardTitle}"/>
-                <TextBlock Style="{DynamicResource CardText}" Text="Save your current mods under a name and switch between sets. Loading a profile first saves what you had as &quot;Before last load&quot;."
-                           Margin="0,4,0,12"/>
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="Delete" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="DeleteProfile_Click"/>
-                    <Button DockPanel.Dock="Right" Content="Load" Style="{DynamicResource AccentButton}" Margin="8,0,0,0" Click="LoadProfile_Click"/>
-                    <ComboBox x:Name="ProfileBox"/>
-                </DockPanel>
-                <DockPanel Margin="0,10,0,0">
-                    <Button DockPanel.Dock="Right" Content="Save current mods" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="SaveProfile_Click"/>
-                    <TextBox x:Name="ProfileNameBox"/>
-                </DockPanel>
+                <TextBlock Text="Atmosphere" Style="{DynamicResource CardTitle}"/>
+                <TextBlock Style="{DynamicResource CardText}" Margin="0,4,0,12"
+                           Text="Default client clouds, sun/moon, particles, and water. Games that set their own fog or sky keep those. This does not change CDN item skins (Jailbreak guns, etc.)."/>
+                <StackPanel x:Name="AtmosphereSlotsPanel"/>
+                <WrapPanel Margin="0,4,0,0">
+                    <Button Content="Import water pack" Style="{DynamicResource GhostButton}" Click="ImportWater_Click"/>
+                    <Button Content="Import particles pack" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="ImportParticles_Click"/>
+                    <Button Content="Import indoor sky" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="ImportIndoorSky_Click"/>
+                    <Button x:Name="ClearIndoorSkyButton" Content="Clear indoor sky" Style="{DynamicResource GhostButton}" Margin="8,0,0,0" Click="ClearIndoorSky_Click"/>
+                </WrapPanel>
+                <WrapPanel Margin="0,10,0,0">
+                    <Button Content="Replace client file…" Style="{DynamicResource AccentButton}" Click="ReplaceClientFile_Click"/>
+                </WrapPanel>
+                <TextBlock Style="{DynamicResource CardText}" Margin="0,10,0,0"
+                           Text="Replace client file: pick the stock file inside your Octane folder, then pick the replacement. It is stored under Modifications and re-applied every launch."/>
+                <TextBlock x:Name="AtmosphereStatus" Style="{DynamicResource CardText}" Margin="0,8,0,0"/>
             </StackPanel>
         </Border>
 

@@ -195,10 +195,25 @@ public partial class MenuWindow : Window
     private void RefreshPlayfulCopy()
     {
         var themePlayful = PlayfulMotion.IsPlayful;
-        BrandTitle.Text = themePlayful ? $"{AppInfo.Name} ✨" : AppInfo.Name;
-        BrandSub.Text = themePlayful ? "for Octane 🎀" : "for Octane";
+        var halloween = PlayfulMotion.IsHalloween;
+        BrandTitle.Text = halloween ? $"{AppInfo.Name} 🎃" : themePlayful ? $"{AppInfo.Name} ✨" : AppInfo.Name;
+        BrandSub.Text = halloween ? "for Octane 🍬" : themePlayful ? "for Octane 🎀" : "for Octane";
         // Modern nav items have icons, so the emoji suffixes are Classic-only.
         var playful = themePlayful && !ThemeService.IsModern;
+        if (halloween && playful)
+        {
+            NavMods.Content = "Mods 🍬";
+            NavFlags.Content = "Fast Flags 🎃";
+            NavAppearance.Content = "Appearance 👻";
+            NavBehaviour.Content = "Behaviour 🦇";
+            NavIntegrations.Content = "Integrations 🍭";
+            NavInstall.Content = "Install 🍫";
+            NavAbout.Content = "About 🔮";
+            LaunchPlayerButton.Content = App.Settings.Prop.LaunchAppBeta ? "Launch Octane App 🎃" : "Launch Octane 🎃";
+            LaunchStudioButton.Content = "Studio 🍬";
+            return;
+        }
+
         NavMods.Content = playful ? "Mods 🧁" : "Mods";
         NavFlags.Content = playful ? "Fast Flags ⭐" : "Fast Flags";
         NavAppearance.Content = playful ? "Appearance 💗" : "Appearance";

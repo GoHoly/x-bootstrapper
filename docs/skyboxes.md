@@ -50,11 +50,14 @@ don't set one.
   `src/Caelus/Services/SkyboxService.cs`. Every pixel comes from a small procedural shader evaluated in the
   direction of that pixel, so the faces line up without seams. No third-party images are used.
 - **Custom skies** take six images of any size and format that WPF can read. Each image is scaled to
-  1024 x 1024.
+  1024 x 1024. Mods → Custom opens an editor with per-face upload slots and a 3D skybox preview (drag to
+  look around) that uses the same theme/style as the rest of the app.
 - Every face is encoded to DXT1 with a principal-axis block encoder and 11 box-filtered mips, and written
   with a header identical to the stock one. The files end up the same size as the originals.
 - The faces go to `Modifications\content\textures\sky\sky512_*.tex` and are applied like any other mod:
   the originals are backed up in `ModBackups` first. `Modifications\xb-sky.txt` records which sky is set.
+- On launch, X Bootstrapper reapplies the sky while OctanePlayerLauncher starts the player (the official
+  launcher can restore stock files) and once more when the player process appears.
 - **Default** removes the sky files from Modifications and restores the backed-up originals, byte for byte
   (checked with SHA-256).
 - Sky files aren't mirrored into `ExtraContent`.

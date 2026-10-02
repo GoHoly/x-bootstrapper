@@ -318,16 +318,22 @@ public partial class FastFlagsPage : System.Windows.Controls.UserControl
             s.FastFlags = CollectFlags();
         }
 
-        App.Save();
         if (UiShots.Active)
+        {
+            App.Save();
             return;
+        }
+
         try
         {
+            // Apply first so WrittenFlagKeys is up to date, then persist settings + state together.
             FastFlagService.ApplyAll(s, App.State.Prop, ClientLocator.Find(s, App.State.Prop), log: true);
         }
         catch (Exception ex)
         {
             Logger.Error("FastFlags", ex);
         }
+
+        App.Save();
     }
 }

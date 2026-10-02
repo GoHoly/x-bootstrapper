@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Media;
 using Caelus.Core;
 using Caelus.Models;
+using Caelus.Services;
 using Color = System.Windows.Media.Color;
 
 namespace Caelus.UI;
@@ -47,9 +48,31 @@ public static class ThemeService
     {
         new()
         {
+            Id = AppTheme.Halloween,
+            Name = "Halloween",
+            Blurb = "Pumpkin neon on charcoal. Default for now.",
+            Accent = Rgb(0xFF, 0x7A, 0x18),
+            AccentHover = Rgb(0xFF, 0x92, 0x2E),
+            AccentForeground = Rgb(0x1A, 0x0C, 0x04),
+            Background = Rgb(0x12, 0x10, 0x0E),
+            Surface = Rgb(0x18, 0x15, 0x12),
+            Card = Rgb(0x1E, 0x1A, 0x16),
+            Sidebar = Rgb(0x0C, 0x0B, 0x09),
+            Border = Rgb(0x3A, 0x2E, 0x22),
+            Text = Rgb(0xF5, 0xEB, 0xDE),
+            Muted = Rgb(0xA8, 0x90, 0x78),
+            Danger = Rgb(0xE0, 0x4E, 0x3A),
+            Input = Rgb(0x26, 0x20, 0x1A),
+            Hover = Rgb(0x2E, 0x26, 0x1E),
+            Popup = Rgb(0x16, 0x13, 0x10),
+            Track = Rgb(0x34, 0x2A, 0x20),
+            Playful = true
+        },
+        new()
+        {
             Id = AppTheme.Dark,
             Name = "Midnight",
-            Blurb = "Dark wood and signal red. Default.",
+            Blurb = "Dark wood and signal red.",
             Accent = Rgb(0xC4, 0x32, 0x2A),
             AccentHover = Rgb(0xD8, 0x44, 0x3A),
             AccentForeground = Rgb(0xFF, 0xF4, 0xF2),
@@ -201,9 +224,31 @@ public static class ThemeService
     {
         new()
         {
+            Id = AppTheme.Halloween,
+            Name = "Halloween",
+            Blurb = "Jack-o'-lantern orange on charcoal — Octane's spooky season. Default for now.",
+            Accent = Rgb(0xFF, 0x7A, 0x18),
+            AccentHover = Rgb(0xFF, 0x94, 0x32),
+            AccentForeground = Rgb(0x1A, 0x0C, 0x04),
+            Background = Rgb(0x10, 0x0E, 0x0C),
+            Surface = Rgb(0x16, 0x13, 0x11),
+            Card = Rgb(0x1B, 0x17, 0x14),
+            Sidebar = Rgb(0x0A, 0x09, 0x08),
+            Border = Rgb(0x36, 0x2A, 0x1E),
+            Text = Rgb(0xF6, 0xEC, 0xDF),
+            Muted = Rgb(0xB0, 0x94, 0x78),
+            Danger = Rgb(0xE8, 0x52, 0x3C),
+            Input = Rgb(0x24, 0x1E, 0x18),
+            Hover = Rgb(0x2C, 0x24, 0x1C),
+            Popup = Rgb(0x14, 0x11, 0x0F),
+            Track = Rgb(0x32, 0x28, 0x1E),
+            Playful = true
+        },
+        new()
+        {
             Id = AppTheme.Dark,
             Name = "Midnight",
-            Blurb = "Near-black with a violet accent. Default.",
+            Blurb = "Near-black with a violet accent.",
             Accent = Rgb(0x8B, 0x7C, 0xF6),
             AccentHover = Rgb(0x9E, 0x91, 0xFA),
             AccentForeground = Rgb(0xFF, 0xFF, 0xFF),
@@ -443,6 +488,39 @@ public static class ThemeService
         }
 
         Changed?.Invoke();
+        SyncChromeIcons();
+    }
+
+    private static bool _chromeHooked;
+
+    /// <summary>
+    /// Taskbar / title-bar / tray: swap to the theme's logo so Halloween gets the dripping X, Octane purple, etc.
+    /// </summary>
+    public static void SyncChromeIcons()
+    {
+        EnsureChromeHook();
+        if (Application.Current is null)
+            return;
+
+        var icon = Logo(Current.Id);
+        foreach (Window window in Application.Current.Windows)
+            window.Icon = icon;
+
+        TrayService.ApplyThemeIcon();
+    }
+
+    private static void EnsureChromeHook()
+    {
+        if (_chromeHooked)
+            return;
+        _chromeHooked = true;
+        // New windows (bootstrapper, setup, what's new…) pick up the current theme logo on load.
+        EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent,
+            new RoutedEventHandler(static (sender, _) =>
+            {
+                if (sender is Window window)
+                    window.Icon = Logo(Current.Id);
+            }));
     }
 
     private static ResourceDictionary StyleDictionary(UiStyle style)
@@ -502,11 +580,12 @@ public static class ThemeService
     }
 
     /// <summary>
-    /// Per-theme logo: the neon "X in a broken circle" whose color matches the theme's accent. Midnight (the default)
-    /// and themes without a match keep the original mark.
+    /// Per-theme logo: the neon "X in a broken circle" whose color matches the theme's accent.
+    /// Halloween uses the dripping pumpkin-neon mark; themes without a match keep the original.
     /// </summary>
     public static string? LogoFile(AppTheme theme) => theme switch
     {
+        AppTheme.Halloween => "logo-halloween.png",
         AppTheme.Octane => "logo-purple.png",
         AppTheme.Classic => "logo-blue.png",
         AppTheme.Light or AppTheme.Dusk => "logo-red.png",

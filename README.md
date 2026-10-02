@@ -21,7 +21,7 @@ X Bootstrapper checks GitHub Releases for this repository when you open it. It i
 
 - Handles `octane-player://` and `octane-studio://`, so **Play** on octane.wtf opens through X Bootstrapper. The official launcher's handler is remembered and restored on uninstall. The menu warns you (with a **Fix links** button) when Octane's launcher takes the links back
 - Mods: import a pack or single files, mod profiles, a list of applied files, and one-click restore of the client's original files (originals are backed up before they are replaced)
-- Sky picker: four built-in skies or six images of your own, converted to the client's sky format; Default restores the original exactly (see [docs/skyboxes.md](docs/skyboxes.md))
+- Sky picker: four built-in skies or a custom editor with a drag-to-look 3D preview of your six images, converted to the client's sky format; Default restores the original exactly (see [docs/skyboxes.md](docs/skyboxes.md)). Skies are re-applied while Octane starts so the official launcher cannot silently restore the stock ones
 - FastFlags: renderer/FPS presets plus an editable flag table with JSON import/export and flag profiles
 - Launch with the game: start your own programs with Octane and optionally close them when it exits
 - Tray icon while a game is running (Open settings, Open logs, Exit)

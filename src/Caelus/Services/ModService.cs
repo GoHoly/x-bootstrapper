@@ -29,9 +29,76 @@ public static class ModService
     private const string AudioFilter = "Audio|*.ogg;*.mp3;*.wav|All files|*.*";
     private const string ImageFilter = "Images|*.png;*.jpg;*.jpeg|All files|*.*";
     private const string FontFilter = "Fonts|*.ttf;*.otf|All files|*.*";
+    private const string TextureFilter = "Textures|*.dds;*.png;*.jpg;*.jpeg;*.tex|All files|*.*";
+
+    public const string WaterRelativeFolder = @"content\textures\water";
+    public const string ParticlesRelativeFolder = @"content\textures\particles";
+    public const string ClientSkyFolder = @"content\sky";
 
     public static readonly ModSlot[] Slots =
     {
+        new()
+        {
+            Id = "clouds",
+            Group = "Atmosphere",
+            Title = "Clouds",
+            Hint = "DDS — default cloud layer (content\\sky\\clouds.dds)",
+            RelativePath = P("content", "sky", "clouds.dds"),
+            ExtraPaths = new[] { P("content", "sky", "clouds-bc4.dds") },
+            Filter = TextureFilter
+        },
+        new()
+        {
+            Id = "cloudDetail",
+            Group = "Atmosphere",
+            Title = "Cloud detail",
+            Hint = "DDS — cloud noise / detail",
+            RelativePath = P("content", "sky", "cloudDetail.dds"),
+            ExtraPaths = new[]
+            {
+                P("content", "sky", "cloudDetail3D.dds"),
+                P("content", "sky", "cloudDetail3D-bc4.dds")
+            },
+            Filter = TextureFilter
+        },
+        new()
+        {
+            Id = "cloudAdvection",
+            Group = "Atmosphere",
+            Title = "Cloud advection",
+            Hint = "DDS — cloud motion map",
+            RelativePath = P("content", "sky", "cloudAdvection.dds"),
+            Filter = TextureFilter
+        },
+        new()
+        {
+            Id = "sun",
+            Group = "Atmosphere",
+            Title = "Sun",
+            Hint = "JPG — default sun disc",
+            RelativePath = P("content", "sky", "sun.jpg"),
+            ExtraPaths = new[] { P("content", "sky", "sun-rays.jpg") },
+            Filter = TextureFilter
+        },
+        new()
+        {
+            Id = "moon",
+            Group = "Atmosphere",
+            Title = "Moon",
+            Hint = "JPG — default moon",
+            RelativePath = P("content", "sky", "moon.jpg"),
+            ExtraPaths = new[] { P("content", "sky", "moon-alpha.jpg") },
+            Filter = TextureFilter
+        },
+        new()
+        {
+            Id = "particleSquare",
+            Group = "Atmosphere",
+            Title = "Particle square",
+            Hint = "PNG — common particle sprite",
+            RelativePath = P("content", "textures", "particles", "SquareParticle.png"),
+            Filter = TextureFilter
+        },
         new()
         {
             Id = "death",
@@ -284,7 +351,158 @@ public static class ModService
             return Slots.First(s => s.Id == "cursor");
         if (name.EndsWith(".ttf") || name.EndsWith(".otf"))
             return Slots.First(s => s.Id == "font");
+        if (name.Contains("cloudadvect"))
+            return Slots.First(s => s.Id == "cloudAdvection");
+        if (name.Contains("clouddetail") || name.Contains("cloud_detail"))
+            return Slots.First(s => s.Id == "cloudDetail");
+        if (name.Contains("cloud"))
+            return Slots.First(s => s.Id == "clouds");
+        if (name.StartsWith("sun"))
+            return Slots.First(s => s.Id == "sun");
+        if (name.StartsWith("moon"))
+            return Slots.First(s => s.Id == "moon");
+        if (name.Contains("squareparticle") || name.Contains("particle"))
+            return Slots.First(s => s.Id == "particleSquare");
         return null;
+    }
+
+    public static IEnumerable<ModSlot> AtmosphereSlots() =>
+        Slots.Where(slot => slot.Group.Equals("Atmosphere", StringComparison.OrdinalIgnoreCase));
+
+    public static IEnumerable<ModSlot> NonAtmosphereSlots() =>
+        Slots.Where(slot => !slot.Group.Equals("Atmosphere", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Copies every file from a folder into Modifications under <paramref name="relativeFolder"/> (flat).</summary>
+    public static int ImportFlatFolder(string sourceDirectory, string relativeFolder)
+    {
+        if (!Directory.Exists(sourceDirectory))
+            throw new DirectoryNotFoundException(sourceDirectory);
+
+        relativeFolder = relativeFolder.Trim().TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            .Replace('/', Path.DirectorySeparatorChar);
+        if (!IsClientRelative(relativeFolder + Path.DirectorySeparatorChar + "x"))
+            throw new InvalidOperationException("That folder is not under content, ExtraContent, or PlatformContent.");
+
+        var written = 0;
+        foreach (var file in Directory.GetFiles(sourceDirectory))
+        {
+            var name = Path.GetFileName(file);
+            if (name.Equals("README.txt", StringComparison.OrdinalIgnoreCase))
+                continue;
+            WriteModFile(file, Path.Combine(relativeFolder, name));
+            written++;
+        }
+
+        if (written == 0)
+            throw new InvalidOperationException("That folder has no files to import.");
+
+        Logger.Write("Mods", $"Imported {written} file(s) into {relativeFolder}");
+        ApplyToInstalledClients();
+        return written;
+    }
+
+    public static string IndoorSkyRelativePath(string face) =>
+        Path.Combine("content", "textures", "sky", $"indoor512_{face}.tex");
+
+    public static bool HasIndoorSkyMods() =>
+        SkyboxService.Faces.Any(face => File.Exists(Path.Combine(Paths.Modifications, IndoorSkyRelativePath(face))));
+
+    public static void ClearIndoorSky()
+    {
+        foreach (var face in SkyboxService.Faces)
+        {
+            var path = Path.Combine(Paths.Modifications, IndoorSkyRelativePath(face));
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+
+        ApplyToInstalledClients();
+        Logger.Write("Mods", "Cleared indoor sky mods.");
+    }
+
+    /// <summary>
+    /// Imports six indoor cubemap faces from a folder. Accepts indoor512_*.tex or bk/dn/ft/lf/rt/up named files.
+    /// </summary>
+    public static int ImportIndoorSkyFolder(string sourceDirectory)
+    {
+        if (!Directory.Exists(sourceDirectory))
+            throw new DirectoryNotFoundException(sourceDirectory);
+
+        var files = Directory.GetFiles(sourceDirectory);
+        var matched = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var face in SkyboxService.Faces)
+        {
+            var hit = files.FirstOrDefault(file =>
+            {
+                var name = Path.GetFileNameWithoutExtension(file);
+                return name.Equals($"indoor512_{face}", StringComparison.OrdinalIgnoreCase) ||
+                       name.Equals(face, StringComparison.OrdinalIgnoreCase) ||
+                       name.EndsWith($"_{face}", StringComparison.OrdinalIgnoreCase);
+            });
+            if (hit is not null)
+                matched[face] = hit;
+        }
+
+        if (matched.Count == 0)
+            throw new InvalidOperationException(
+                "No indoor sky faces found. Name files indoor512_bk.tex … indoor512_up.tex (or bk, dn, ft, lf, rt, up).");
+
+        foreach (var (face, file) in matched)
+            WriteModFile(file, IndoorSkyRelativePath(face));
+
+        Logger.Write("Mods", $"Imported indoor sky ({matched.Count} face(s))");
+        ApplyToInstalledClients();
+        return matched.Count;
+    }
+
+    /// <summary>Resolves an absolute path under the client install to a content-relative mod path.</summary>
+    public static string ClientRelativePath(string absoluteClientFile, ClientInstall install)
+    {
+        if (string.IsNullOrWhiteSpace(install.VersionDirectory))
+            throw new InvalidOperationException("No Octane client folder is available.");
+        if (!File.Exists(absoluteClientFile))
+            throw new FileNotFoundException("That file is missing.", absoluteClientFile);
+
+        var root = Path.GetFullPath(install.VersionDirectory)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var full = Path.GetFullPath(absoluteClientFile);
+        if (!IsInside(root, full))
+            throw new InvalidOperationException(
+                "Pick a file inside the Octane client folder (content, ExtraContent, or PlatformContent).");
+
+        var relative = Path.GetRelativePath(root, full);
+        if (!IsClientRelative(relative))
+            throw new InvalidOperationException(
+                "Only files under content, ExtraContent, or PlatformContent can be replaced.");
+
+        return relative;
+    }
+
+    /// <summary>
+    /// Stages a byte-identical copy of a client file into Modifications (same relative path).
+    /// Prefer <see cref="SetClientRelativeFromFile"/> when you already have a replacement.
+    /// </summary>
+    public static string ReplaceClientFile(string absoluteClientFile, ClientInstall install)
+    {
+        var relative = ClientRelativePath(absoluteClientFile, install);
+        WriteModFile(absoluteClientFile, relative);
+        Logger.Write("Mods", $"Staged client file for replace: {relative}");
+        ApplyToInstalledClients();
+        return relative;
+    }
+
+    /// <summary>Copies a replacement into Modifications at a client-relative path and applies it.</summary>
+    public static string SetClientRelativeFromFile(string sourceFile, string relativePath)
+    {
+        relativePath = relativePath.Trim().TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (!IsClientRelative(relativePath))
+            throw new InvalidOperationException(
+                "Only files under content, ExtraContent, or PlatformContent can be replaced.");
+
+        WriteModFile(sourceFile, relativePath);
+        Logger.Write("Mods", $"Set client-relative mod: {relativePath}");
+        ApplyToInstalledClients();
+        return relativePath;
     }
 
     private static string P(params string[] parts) => Path.Combine(parts);
@@ -517,13 +735,19 @@ public static class ModService
         {
             File.WriteAllText(readme,
                 "Drop 2021-era client files here using the same paths as the Octane version folder.\r\n" +
-                "Or use the Mods page pickers for cursors, shiftlock, emote wheel, Tab list, and sounds.\r\n" +
+                "Or use the Mods page pickers for atmosphere, cursors, HUD, and sounds.\r\n" +
                 "Examples:\r\n" +
+                "  content\\sky\\clouds.dds\r\n" +
+                "  content\\sky\\sun.jpg\r\n" +
+                "  content\\textures\\sky\\indoor512_ft.tex\r\n" +
+                "  content\\textures\\particles\\SquareParticle.png\r\n" +
+                "  content\\textures\\water\\normal_01.dds\r\n" +
                 "  content\\sounds\\uuhhh.mp3\r\n" +
                 "  content\\textures\\ArrowCursor.png\r\n" +
                 "  content\\textures\\MouseLockedCursor.png\r\n" +
                 "  content\\textures\\ui\\Emotes\\Large\\SegmentedCircle.png\r\n" +
                 "  content\\textures\\ui\\TopBar\\leaderboardOn.png\r\n" +
+                "Games that set their own Sky / fog keep theirs. CDN item skins (e.g. Jailbreak guns) are not client files.\r\n" +
                 "X Bootstrapper copies these over the installed client every launch.\r\n");
         }
 
@@ -595,7 +819,9 @@ public static class ModService
         foreach (var file in Directory.GetFiles(Paths.Modifications, "*", SearchOption.AllDirectories))
         {
             var relative = Path.GetRelativePath(Paths.Modifications, file);
-            if (relative.Equals("README.txt", StringComparison.OrdinalIgnoreCase))
+            if (relative.Equals("README.txt", StringComparison.OrdinalIgnoreCase) ||
+                relative.Equals("xb-sky.txt", StringComparison.OrdinalIgnoreCase) ||
+                relative.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase))
                 continue;
 
             yield return (file, relative);

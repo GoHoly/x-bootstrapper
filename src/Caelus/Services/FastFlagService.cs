@@ -45,16 +45,26 @@ public static class FastFlagService
         else if (settings.FramerateLimit < 0)
             flags["DFIntTaskSchedulerTargetFps"] = "9999";
 
+        // Any explicit FPS target (including Unlimited) must beat the engine's 240 cap flags.
+        if (settings.FramerateLimit != 0)
+        {
+            flags["FFlagTaskSchedulerLimitTargetFpsTo2402"] = "False";
+            flags["FFlagTaskSchedulerLimitTargetFpsTo240"] = "False";
+        }
+
+        // Octane 2021 is reliable on D3D11. Automatic means prefer that path — not "leave whatever
+        // PreferVulkan / PreferOpenGL the client dump last had." Explicit Vulkan/OpenGL only set a
+        // preference; they never disable Direct3D (that broke shadows).
         switch (settings.RenderingMode)
         {
-            case RenderingMode.Direct3D11:
-                SetRendererPreference(flags, d3d11: true);
-                break;
             case RenderingMode.Vulkan:
                 SetRendererPreference(flags, vulkan: true);
                 break;
             case RenderingMode.OpenGL:
                 SetRendererPreference(flags, openGl: true);
+                break;
+            default:
+                SetRendererPreference(flags, d3d11: true);
                 break;
         }
 
@@ -69,7 +79,7 @@ public static class FastFlagService
         if (settings.TextureQuality >= 0)
         {
             flags["DFFlagTextureQualityOverrideEnabled"] = "True";
-            flags["DFIntTextureQualityOverride"] = settings.TextureQuality.ToString();
+            flags["DFIntTextureQualityOverride"] = Math.Clamp(settings.TextureQuality, 0, 2).ToString();
         }
 
         if (settings.ShowFpsCounter)
@@ -90,9 +100,6 @@ public static class FastFlagService
             flags["FIntFRMMinGrassDistance"] = "0";
             flags["FIntFRMMaxGrassDistance"] = "0";
             flags["DFFlagDebugPauseVoxelizer"] = "True";
-
-            if (settings.RenderingMode == RenderingMode.Automatic)
-                SetRendererPreference(flags, d3d11: true);
         }
 
         return flags;

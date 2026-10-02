@@ -141,6 +141,128 @@ public static class SkyboxService
 
         File.WriteAllText(MarkerPath, id);
         ModService.ApplyToInstalledClients();
+        // Second pass: OctanePlayerLauncher / antivirus sometimes holds the files during the first copy.
+        EnsureOnClients();
+    }
+
+    /// <summary>
+    /// Makes sure every selected sky face is actually on each known client (byte-for-byte with Modifications).
+    /// Call after apply and again while the official launcher is starting the player — it can restore stock files.
+    /// </summary>
+    public static int EnsureOnClients()
+    {
+        if (CurrentId() == DefaultId)
+            return 0;
+
+        var copied = 0;
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var install in ClientLocator.FindAll(App.Settings.Prop, App.State.Prop, null))
+        {
+            if (string.IsNullOrWhiteSpace(install.VersionDirectory) || !seen.Add(install.VersionDirectory))
+                continue;
+            copied += EnsureOnClient(install);
+        }
+
+        return copied;
+    }
+
+    public static int EnsureOnClient(ClientInstall install)
+    {
+        if (string.IsNullOrWhiteSpace(install.VersionDirectory) || !Directory.Exists(install.VersionDirectory))
+            return 0;
+        if (CurrentId() == DefaultId)
+            return 0;
+
+        var store = ModBackupStore.Open(install.VersionDirectory);
+        var copied = 0;
+        foreach (var face in Faces)
+        {
+            var relative = RelativePath(face);
+            var source = Path.Combine(Paths.Modifications, relative);
+            if (!File.Exists(source))
+                continue;
+
+            try
+            {
+                if (store.Apply(relative, source))
+                    copied++;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Logger.Write("Sky", $"Could not push {relative} onto the client: {ex.Message}");
+            }
+        }
+
+        if (copied > 0)
+        {
+            try { store.Save(); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Logger.Write("Sky", $"Could not save the mod manifest after sky ensure: {ex.Message}");
+            }
+
+            Logger.Write("Sky", $"Re-copied {copied} sky face(s) onto {install.VersionDirectory}");
+        }
+
+        return copied;
+    }
+
+    /// <summary>A BitmapSource for one face (built-in, custom, or default), or null.</summary>
+    public static BitmapSource? FacePreview(string id, string face, int size)
+    {
+        byte[]? rgba = id switch
+        {
+            DefaultId => DecodeFile(OriginalClientFile(face), size),
+            CustomId => DecodeFile(Path.Combine(Paths.Modifications, RelativePath(face)), size),
+            _ when BuiltIn.Any(preset => preset.Id == id) => Render(id, face, size),
+            _ => null
+        };
+        return RgbaToBitmap(rgba, size);
+    }
+
+    /// <summary>Loads an image file as a frozen BitmapSource for the custom sky UI.</summary>
+    public static BitmapSource? LoadImageSource(string path, int decodeSize = 256)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+                return null;
+
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+            image.UriSource = new Uri(Path.GetFullPath(path));
+            image.DecodePixelWidth = decodeSize;
+            image.EndInit();
+            image.Freeze();
+            return image;
+        }
+        catch (Exception ex)
+        {
+            Logger.Write("Sky", $"Could not preview {path}: {ex.Message}");
+            return null;
+        }
+    }
+
+    public static BitmapSource? RgbaToBitmap(byte[]? rgba, int size)
+    {
+        if (rgba is null || rgba.Length < size * size * 4)
+            return null;
+
+        var bgra = new byte[size * size * 4];
+        for (var i = 0; i < size * size; i++)
+        {
+            var s = i * 4;
+            bgra[s] = rgba[s + 2];
+            bgra[s + 1] = rgba[s + 1];
+            bgra[s + 2] = rgba[s];
+            bgra[s + 3] = 255;
+        }
+
+        var bitmap = BitmapSource.Create(size, size, 96, 96, PixelFormats.Bgra32, null, bgra, size * 4);
+        bitmap.Freeze();
+        return bitmap;
     }
 
     /// <summary>

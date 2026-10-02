@@ -242,7 +242,11 @@ public partial class App : System.Windows.Application
         {
             var client = ClientLocator.Find(Settings.Prop, State.Prop);
             if (client is not null)
+            {
                 FastFlagService.ApplyAll(Settings.Prop, State.Prop, client, log: true);
+                // Persist WrittenFlagKeys so the next launch can remove flags you turned off.
+                Save();
+            }
         }
         catch (Exception ex)
         {

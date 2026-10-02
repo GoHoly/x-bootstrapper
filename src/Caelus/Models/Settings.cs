@@ -17,7 +17,8 @@ public enum AppTheme
     Classic,
     Dusk,
     Xyxy,
-    XyxyDark
+    XyxyDark,
+    Halloween
 }
 
 /// <summary>Visual style applied on top of the theme colors. Classic is the pre-2.2 look.</summary>
@@ -52,7 +53,7 @@ public sealed class Settings
     public string InstallLocation { get; set; } = "";
     public string ClientDirectory { get; set; } = "";
 
-    public AppTheme Theme { get; set; } = AppTheme.Dark;
+    public AppTheme Theme { get; set; } = AppTheme.Halloween;
     public BootstrapperStyle BootstrapperStyle { get; set; } = BootstrapperStyle.Fluent;
     // Missing in older settings files, so existing users get the new Modern style too.
     public UiStyle UiStyle { get; set; } = UiStyle.Modern;

@@ -72,6 +72,11 @@ public sealed class BootstrapperService
 
             Logger.Write("Bootstrapper", $"Launching App Beta: {Path.GetFileName(install.PlayerExecutable)} {AppBetaService.LaunchArguments}");
             SetStatus("Starting Octane App...");
+            await Task.Run(() =>
+            {
+                ApplyOverrides(install, log: false, mods: true);
+                SkyboxService.EnsureOnClient(install);
+            }, token);
             var app = StartProcess(install.PlayerExecutable, start => start.Arguments = AppBetaService.LaunchArguments);
             return new LaunchResult(app, true, install);
         }
@@ -92,8 +97,10 @@ public sealed class BootstrapperService
             Logger.Write("Bootstrapper", $"Handing the {scheme} link to {Path.GetFileName(handler.Value.Exe)}.");
             var launcher = StartProcess(handler.Value.Exe, start => start.Arguments = handler.Value.Arguments);
 
+            // The official launcher can restore stock client files (including sky) while it starts the
+            // player. Keep pushing mods/sky until the player is up so the textures it loads are ours.
             SetStatus(studio ? "Waiting for Octane Studio..." : "Waiting for Octane...");
-            var game = await ClientLocator.WaitForNewProcessAsync(watchNames, alreadyRunning, ClientStartTimeout, token);
+            var game = await WaitForClientAsync(watchNames, alreadyRunning, install, token);
             if (game is null)
             {
                 Logger.Write("Bootstrapper", $"No new {(studio ? "Studio" : "player")} process appeared after the handoff.");
@@ -110,8 +117,54 @@ public sealed class BootstrapperService
             ? install.StudioExecutable ?? throw new InvalidOperationException("Octane Studio was not found next to the client.")
             : install.PlayerExecutable;
 
+        // One last push right before the executable starts so sky/mod files are on disk for the load.
+        await Task.Run(() =>
+        {
+            ApplyOverrides(install, log: false, mods: true);
+            SkyboxService.EnsureOnClient(install);
+        }, token);
+
         var process = StartProcess(exe, _ => { });
         return new LaunchResult(process, true, install);
+    }
+
+    private async Task<Process?> WaitForClientAsync(IEnumerable<string> watchNames, ISet<int> alreadyRunning, ClientInstall install, CancellationToken token)
+    {
+        var names = watchNames.ToArray();
+        var deadline = DateTime.UtcNow + ClientStartTimeout;
+        var lastPush = DateTime.MinValue;
+        while (DateTime.UtcNow < deadline)
+        {
+            token.ThrowIfCancellationRequested();
+
+            if (DateTime.UtcNow - lastPush > TimeSpan.FromMilliseconds(400))
+            {
+                lastPush = DateTime.UtcNow;
+                try
+                {
+                    ApplyOverrides(install, log: false, mods: true);
+                    SkyboxService.EnsureOnClient(install);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Write("Bootstrapper", $"Could not re-apply mods while waiting: {ex.Message}");
+                }
+            }
+
+            foreach (var name in names)
+            {
+                foreach (var process in Process.GetProcessesByName(name))
+                {
+                    if (!alreadyRunning.Contains(process.Id))
+                        return process;
+                    process.Dispose();
+                }
+            }
+
+            await Task.Delay(200, token);
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -131,8 +184,8 @@ public sealed class BootstrapperService
     }
 
     /// <summary>
-    /// The official launcher can rewrite ClientSettings as it starts the player, so write the flags
-    /// once more after the player shows up (once, not in a loop).
+    /// The official launcher can rewrite ClientSettings (and sky/mod files) as it starts the player,
+    /// so write flags and mods once more after the player shows up.
     /// </summary>
     private void ApplyToRunningPlayer(Process player)
     {
@@ -141,10 +194,15 @@ public sealed class BootstrapperService
             Logger.Write("Bootstrapper", $"OctanePlayer is running ({player.Id})");
             var target = ClientLocator.FromPlayerProcess(player) ?? ClientLocator.Find(_settings, _state);
             FastFlagService.ApplyAll(_settings, _state, target, log: true);
+            if (target is not null)
+            {
+                ModService.Apply(target, log: true);
+                SkyboxService.EnsureOnClient(target);
+            }
         }
         catch (Exception ex)
         {
-            Logger.Write("Bootstrapper", $"Could not re-apply FastFlags: {ex.Message}");
+            Logger.Write("Bootstrapper", $"Could not re-apply FastFlags/mods: {ex.Message}");
         }
     }
 

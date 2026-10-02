@@ -1,5 +1,5 @@
 ﻿#define MyAppName "X Bootstrapper"
-#define MyAppVersion "2.3.4"
+#define MyAppVersion "2.4.0"
 #define MyAppPublisher "X Bootstrapper"
 #define MyAppExeName "X Bootstrapper.exe"
 #define MyAppURL "https://octane.wtf"

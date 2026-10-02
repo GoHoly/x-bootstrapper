@@ -82,6 +82,7 @@ internal static class UiSound
 
     private static float[] BuildClick(AppTheme theme) => theme switch
     {
+        AppTheme.Halloween => Tick(196, 0.07, 0.32, 0.11),
         AppTheme.Xyxy => Keycap(night: false, rich: false),
         AppTheme.XyxyDark => Keycap(night: true, rich: false),
         AppTheme.Dark => Tick(168, 0.06, 0.20, 0.10),
@@ -98,6 +99,8 @@ internal static class UiSound
             return Keycap(night: false, rich: true);
         if (theme is AppTheme.XyxyDark)
             return Keycap(night: true, rich: true);
+        if (theme is AppTheme.Halloween)
+            return Mix(Tick(180, 0.08, 0.28, 0.12), Tick(92, 0.12, 0.18, 0.09), 0.05);
 
         var click = BuildClick(theme);
         var extra = Tick(theme switch

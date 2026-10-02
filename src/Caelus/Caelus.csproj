@@ -11,10 +11,10 @@
     <ApplicationIcon>Assets\x-bootstrapper.ico</ApplicationIcon>
     <RootNamespace>Caelus</RootNamespace>
     <AssemblyName>X Bootstrapper</AssemblyName>
-    <Version>2.3.4</Version>
-    <AssemblyVersion>2.3.4.0</AssemblyVersion>
-    <FileVersion>2.3.4.0</FileVersion>
-    <InformationalVersion>2.3.4</InformationalVersion>
+    <Version>2.4.0</Version>
+    <AssemblyVersion>2.4.0.0</AssemblyVersion>
+    <FileVersion>2.4.0.0</FileVersion>
+    <InformationalVersion>2.4.0</InformationalVersion>
     <AssemblyTitle>X Bootstrapper</AssemblyTitle>
     <Company>X Bootstrapper</Company>
     <Product>X Bootstrapper</Product>

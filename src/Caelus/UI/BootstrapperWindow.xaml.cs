@@ -16,7 +16,12 @@ public partial class BootstrapperWindow : Window
         InitializeComponent();
         Closed += (_, _) => App.RequestExitIfIdle();
         PlayfulMotion.Attach(this, SparkleLayer);
-        if (PlayfulMotion.IsPlayful)
+        if (PlayfulMotion.IsHalloween)
+        {
+            TitleText.Text = $"{AppInfo.Name} 🎃";
+            SubtitleText.Text = "Starting Octane 🍬";
+        }
+        else if (PlayfulMotion.IsPlayful)
         {
             TitleText.Text = $"{AppInfo.Name} ✨";
             SubtitleText.Text = "Starting Octane 🎀";
@@ -41,7 +46,7 @@ public partial class BootstrapperWindow : Window
 
         var bootstrapper = new BootstrapperService(App.Settings.Prop, App.State.Prop, _args);
         bootstrapper.StatusChanged += status => Dispatcher.BeginInvoke(() =>
-            StatusText.Text = PlayfulMotion.IsPlayful ? status + " ✨" : status);
+            StatusText.Text = PlayfulMotion.IsHalloween ? status + " 🍬" : PlayfulMotion.IsPlayful ? status + " ✨" : status);
         bootstrapper.ProgressChanged += (value, indeterminate) => Dispatcher.BeginInvoke(() =>
         {
             Progress.IsIndeterminate = indeterminate;

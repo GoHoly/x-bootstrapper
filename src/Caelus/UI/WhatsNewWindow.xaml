@@ -29,7 +29,7 @@
                     <Button DockPanel.Dock="Right" Content="✕" Style="{DynamicResource CloseButton}" VerticalAlignment="Top"
                             WindowChrome.IsHitTestVisibleInChrome="True" Click="Close_Click"/>
                     <Border Style="{DynamicResource LogoMark}">
-                        <Image Source="{DynamicResource LogoImage}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <Image Source="{DynamicResource LogoImage}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"/>
                     </Border>
                     <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
                         <TextBlock x:Name="TitleText" Text="What's new" FontSize="17" FontWeight="SemiBold"/>

@@ -26,7 +26,7 @@
                     <ComboBoxItem Content="OpenGL"/>
                 </ComboBox>
                 <TextBlock Style="{DynamicResource CardText}" Margin="0,8,0,0"
-                           Text="Direct3D 11 is the working renderer on this 2021 client. OpenGL and Vulkan used to disable D3D11, which is what broke shadows. Those modes now only set a preference and will not turn Direct3D off."/>
+                           Text="Automatic and Direct3D 11 both prefer D3D11 (the working renderer on this 2021 client). OpenGL and Vulkan only set a preference and will not turn Direct3D off — disabling it is what broke shadows."/>
                 <TextBlock Text="Texture quality" Style="{DynamicResource FieldLabel}" Margin="0,12,0,6"/>
                 <ComboBox x:Name="TextureBox">
                     <ComboBoxItem Content="Default"/>

@@ -59,6 +59,8 @@ internal static class DevTests
                 case "discord": await DiscordAsync(); break;
                 case "links": await LinksAsync(devBase); break;
                 case "sky": await SkyAsync(dir); break;
+                case "flags": await FlagsAsync(); break;
+                case "mods": await ModsAsync(); break;
                 case "logs": await LogsAsync(dir); break;
                 case "themes": await ThemesAsync(args); break;
                 default: Check(false, "unknown test " + name); break;
@@ -573,8 +575,231 @@ internal static class DevTests
         Check(ProtocolService.CheckLinks().All(link => link.Healthy), "links end up pointing at X Bootstrapper");
     }
 
-    // ------------------------------------------------------------------ sky
+    // ------------------------------------------------------------------ mods / atmosphere
 
+    private static async Task ModsAsync()
+    {
+        if (ClientLocator.RunningIds(ClientLocator.PlayerProcessNames).Count > 0)
+        {
+            Check(false, "Octane is running; mods test not run");
+            return;
+        }
+
+        ModService.SkipHudPatch = true;
+        var client = ClientLocator.Find(App.Settings.Prop, App.State.Prop);
+        Check(client is not null, "client found", client?.VersionDirectory);
+        if (client is null)
+            return;
+
+        var cloudsSlot = ModService.Slots.First(slot => slot.Id == "clouds");
+        var clientClouds = Path.Combine(client.VersionDirectory, cloudsSlot.RelativePath);
+        // Client folder casing may be Content\Sky
+        if (!File.Exists(clientClouds))
+        {
+            var alt = Directory.GetFiles(Path.Combine(client.VersionDirectory, "Content", "Sky"), "clouds.dds", SearchOption.TopDirectoryOnly)
+                .FirstOrDefault();
+            Check(alt is not null, "client clouds.dds exists");
+            if (alt is null)
+                return;
+            clientClouds = alt;
+        }
+
+        var stockHash = Hash(clientClouds);
+        var donor = Path.Combine(Path.GetDirectoryName(clientClouds)!, "cloudDetail.dds");
+        Check(File.Exists(donor), "donor cloudDetail.dds exists");
+
+        var hadCloudsMod = ModService.HasSlot(cloudsSlot);
+        var priorMod = hadCloudsMod ? File.ReadAllBytes(ModService.SlotPath(cloudsSlot)) : null;
+
+        try
+        {
+            ModService.SetSlot(cloudsSlot, donor);
+            Check(ModService.HasSlot(cloudsSlot), "clouds slot staged in Modifications");
+            var applied = Path.Combine(client.VersionDirectory, cloudsSlot.RelativePath);
+            if (!File.Exists(applied))
+                applied = clientClouds;
+            Check(Hash(applied) == Hash(donor), "client clouds.dds matches donor after apply");
+            Check(Hash(applied) != stockHash, "client clouds.dds changed from stock");
+
+            var relative = ModService.ClientRelativePath(clientClouds, client);
+            Check(relative.Replace('/', '\\').EndsWith(@"content\sky\clouds.dds", StringComparison.OrdinalIgnoreCase) ||
+                  relative.Replace('/', '\\').EndsWith(@"Content\Sky\clouds.dds", StringComparison.OrdinalIgnoreCase),
+                "ClientRelativePath for clouds", relative);
+
+            var square = Path.Combine(client.VersionDirectory, "Content", "Textures", "particles", "SquareParticle.png");
+            if (!File.Exists(square))
+                square = Path.Combine(client.VersionDirectory, ModService.Slots.First(s => s.Id == "particleSquare").RelativePath);
+            Check(File.Exists(square), "SquareParticle.png on client");
+            if (File.Exists(square))
+            {
+                var particleRel = ModService.ClientRelativePath(square, client);
+                ModService.SetClientRelativeFromFile(square, particleRel); // identical bytes — still stages
+                Check(File.Exists(Path.Combine(Paths.Modifications, particleRel)), "replace stages into Modifications", particleRel);
+                // Clean particle stage so we don't leave a useless identical mod
+                var staged = Path.Combine(Paths.Modifications, particleRel);
+                if (File.Exists(staged))
+                    File.Delete(staged);
+                ModService.ApplyToInstalledClients();
+            }
+
+            var menu = await OpenMenuAsync();
+            var page = (ModsPage)menu.Navigate("NavMods")!;
+            await UiShots.SettleAsync(800);
+            Check(page.FindName("AtmosphereSlotsPanel") is System.Windows.Controls.Panel, "Atmosphere panel present");
+            Check(page.FindName("ClearIndoorSkyButton") is System.Windows.Controls.Button, "Clear indoor sky button present");
+            menu.Close();
+        }
+        finally
+        {
+            if (priorMod is null)
+                ModService.ClearSlot(cloudsSlot);
+            else
+            {
+                var tmp = Path.Combine(Path.GetTempPath(), "xb-clouds-restore-" + Guid.NewGuid().ToString("N") + ".dds");
+                File.WriteAllBytes(tmp, priorMod);
+                try { ModService.SetSlot(cloudsSlot, tmp); }
+                finally { try { File.Delete(tmp); } catch { /* ignore */ } }
+            }
+
+            Note("restored clouds atmosphere slot");
+        }
+    }
+
+    // ------------------------------------------------------------------ flags
+
+    private static async Task FlagsAsync()
+    {
+        var client = ClientLocator.Find(App.Settings.Prop, App.State.Prop);
+        Check(client is not null, "client found", client?.VersionDirectory);
+        if (client is null)
+            return;
+
+        var settingsPath = Path.Combine(client.VersionDirectory, "ClientSettings", "ClientAppSettings.json");
+        Check(File.Exists(settingsPath), "ClientAppSettings.json exists", settingsPath);
+
+        var s = App.Settings.Prop;
+        var snapshot = (
+            s.FramerateLimit,
+            s.RenderingMode,
+            s.TextureQuality,
+            s.DisablePostFx,
+            s.ShowFpsCounter,
+            s.PerformanceMode,
+            FastFlags: new Dictionary<string, string>(s.FastFlags ?? new(), StringComparer.OrdinalIgnoreCase));
+
+        try
+        {
+            // Automatic + unlimited FPS + high textures + FPS counter, no perf
+            s.FramerateLimit = -1;
+            s.RenderingMode = RenderingMode.Automatic;
+            s.TextureQuality = 2;
+            s.DisablePostFx = false;
+            s.ShowFpsCounter = true;
+            s.PerformanceMode = false;
+            s.FastFlags = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var built = FastFlagService.Build(s);
+            Check(built.GetValueOrDefault("DFIntTaskSchedulerTargetFps") == "9999", "unlimited -> TargetFps 9999");
+            Check(built.GetValueOrDefault("FFlagTaskSchedulerLimitTargetFpsTo2402") == "False", "unlimited unlocks 240 cap");
+            Check(built.GetValueOrDefault("FFlagDebugGraphicsPreferD3D11") == "True", "Automatic prefers D3D11");
+            Check(built.GetValueOrDefault("FFlagDebugGraphicsPreferVulkan") == "False", "Automatic clears PreferVulkan");
+            Check(built.GetValueOrDefault("DFIntTextureQualityOverride") == "2", "High texture override = 2");
+            Check(built.ContainsKey("FFlagDisablePostFx") == false, "post FX off leaves DisablePostFx unset");
+            Check(!built.ContainsKey("DFFlagDebugPauseVoxelizer"), "perf off leaves voxelizer flag unset");
+
+            FastFlagService.ApplyAll(s, App.State.Prop, client, log: true);
+            var disk = ReadFlagFile(settingsPath);
+            Check(FlagEquals(disk, "DFIntTaskSchedulerTargetFps", "9999"), "disk TargetFps 9999");
+            Check(FlagEquals(disk, "FFlagDebugGraphicsPreferD3D11", "True"), "disk PreferD3D11");
+            Check(FlagEquals(disk, "DFFlagTextureQualityOverrideEnabled", "True"), "disk texture override on");
+            Check(FlagEquals(disk, "DFIntTextureQualityOverride", "2"), "disk texture quality 2");
+            Check(FlagEquals(disk, "FFlagDebugDisplayFPS", "True"), "disk FPS counter");
+            Check(!disk.ContainsKey("FFlagDisablePostFx"), "disk has no DisablePostFx when off");
+            Check(!disk.ContainsKey("DFFlagDebugPauseVoxelizer"), "disk has no perf voxelizer when off");
+
+            // Explicit Vulkan preference (must not disable D3D11)
+            s.RenderingMode = RenderingMode.Vulkan;
+            built = FastFlagService.Build(s);
+            Check(built.GetValueOrDefault("FFlagDebugGraphicsPreferVulkan") == "True", "Vulkan prefers Vulkan");
+            Check(built.GetValueOrDefault("FFlagDebugGraphicsPreferD3D11") == "False", "Vulkan clears PreferD3D11");
+            Check(!built.ContainsKey("FFlagDebugGraphicsDisableDirect3D11"), "Vulkan never disables D3D11");
+            FastFlagService.ApplyAll(s, App.State.Prop, client, log: false);
+            disk = ReadFlagFile(settingsPath);
+            Check(FlagEquals(disk, "FFlagDebugGraphicsPreferVulkan", "True"), "disk PreferVulkan");
+            Check(!disk.ContainsKey("FFlagDebugGraphicsDisableDirect3D11"), "disk never DisableDirect3D11");
+
+            // Performance mode + default texture
+            s.RenderingMode = RenderingMode.Direct3D11;
+            s.TextureQuality = -1;
+            s.DisablePostFx = true;
+            s.PerformanceMode = true;
+            FastFlagService.ApplyAll(s, App.State.Prop, client, log: false);
+            disk = ReadFlagFile(settingsPath);
+            Check(FlagEquals(disk, "FFlagDisablePostFx", "True"), "disk DisablePostFx");
+            Check(FlagEquals(disk, "DFFlagDebugPauseVoxelizer", "True"), "disk perf voxelizer");
+            Check(FlagEquals(disk, "FIntFRMMaxGrassDistance", "0"), "disk grass distance 0");
+            Check(!disk.ContainsKey("DFFlagTextureQualityOverrideEnabled"), "default texture removes override");
+            Check(!disk.ContainsKey("DFIntTextureQualityOverride"), "default texture removes quality int");
+
+            // Turn perf + postfx off — managed keys must leave the file
+            s.PerformanceMode = false;
+            s.DisablePostFx = false;
+            s.ShowFpsCounter = false;
+            s.FramerateLimit = 0;
+            s.RenderingMode = RenderingMode.Automatic;
+            FastFlagService.ApplyAll(s, App.State.Prop, client, log: false);
+            disk = ReadFlagFile(settingsPath);
+            Check(!disk.ContainsKey("DFFlagDebugPauseVoxelizer"), "turning perf off removes voxelizer");
+            Check(!disk.ContainsKey("FFlagDisablePostFx"), "turning post FX off removes flag");
+            Check(!disk.ContainsKey("DFIntTaskSchedulerTargetFps"), "default FPS removes TargetFps");
+            // Automatic still prefers D3D11
+            Check(FlagEquals(disk, "FFlagDebugGraphicsPreferD3D11", "True"), "Automatic still PreferD3D11 after cleanup");
+
+            var menu = await OpenMenuAsync();
+            var page = (FastFlagsPage)menu.Navigate("NavFlags")!;
+            await UiShots.SettleAsync(800);
+            page.Flush();
+            Check(true, "FastFlags page Flush runs without error");
+            menu.Close();
+        }
+        finally
+        {
+            s.FramerateLimit = snapshot.FramerateLimit;
+            s.RenderingMode = snapshot.RenderingMode;
+            s.TextureQuality = snapshot.TextureQuality;
+            s.DisablePostFx = snapshot.DisablePostFx;
+            s.ShowFpsCounter = snapshot.ShowFpsCounter;
+            s.PerformanceMode = snapshot.PerformanceMode;
+            s.FastFlags = snapshot.FastFlags;
+            FastFlagService.ApplyAll(s, App.State.Prop, client, log: true);
+            if (UiShots.AllowSave)
+                App.Save();
+            Note("restored previous FastFlag presets");
+        }
+    }
+
+    private static Dictionary<string, string> ReadFlagFile(string path)
+    {
+        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
+        var flags = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var property in doc.RootElement.EnumerateObject())
+        {
+            flags[property.Name] = property.Value.ValueKind switch
+            {
+                System.Text.Json.JsonValueKind.String => property.Value.GetString() ?? "",
+                System.Text.Json.JsonValueKind.True => "True",
+                System.Text.Json.JsonValueKind.False => "False",
+                System.Text.Json.JsonValueKind.Number => property.Value.GetRawText(),
+                _ => property.Value.ToString()
+            };
+        }
+        return flags;
+    }
+
+    private static bool FlagEquals(Dictionary<string, string> disk, string key, string expected) =>
+        disk.TryGetValue(key, out var value) &&
+        string.Equals(value, expected, StringComparison.OrdinalIgnoreCase);
+
+    // ------------------------------------------------------------------ sky
     private static async Task SkyAsync(string dir)
     {
         if (ClientLocator.RunningIds(ClientLocator.PlayerProcessNames).Count > 0)
