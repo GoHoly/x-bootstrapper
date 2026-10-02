@@ -21,6 +21,9 @@
                 <CheckBox x:Name="ConfirmBox" Content="Ask before launching" Margin="-16,0,-16,0" Padding="16,0,16,0"/>
                 <CheckBox x:Name="StayBox" Content="Keep X Bootstrapper open after the client starts" Margin="-16,0,-16,0" Padding="16,0,16,0"/>
                 <CheckBox x:Name="TrayBox" Content="Show a tray icon while the game is running (Open settings, Open logs, Exit)" Margin="-16,0,-16,0" Padding="16,0,16,0"/>
+                <CheckBox x:Name="AppBetaBox" Content="Launch the Windows App Beta home (Octane App)" Margin="-16,0,-16,0" Padding="16,0,16,0"/>
+                <TextBlock x:Name="AppBetaHint" Style="{DynamicResource CardText}" Margin="0,4,0,0"
+                           Text="Same as the old Roblox App Beta (--app). Opens the in-client home UI instead of a blank player. Website Play links still join games normally. Octane's current client often lacks App Beta — X Bootstrapper will say so instead of opening a white screen."/>
             </StackPanel>
         </Border>
     </StackPanel>

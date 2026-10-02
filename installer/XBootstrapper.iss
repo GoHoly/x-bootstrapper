@@ -1,5 +1,5 @@
 ﻿#define MyAppName "X Bootstrapper"
-#define MyAppVersion "2.3.2"
+#define MyAppVersion "2.3.3"
 #define MyAppPublisher "X Bootstrapper"
 #define MyAppExeName "X Bootstrapper.exe"
 #define MyAppURL "https://octane.wtf"
@@ -44,6 +44,7 @@ Source: "..\publish\app\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdir
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-menu"; Comment: "{#MyAppName}"
 Name: "{group}\Octane"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-player"; Comment: "Launch Octane"
+Name: "{group}\Octane App"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-app"; Comment: "Launch Octane Windows App Beta"
 Name: "{userdesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "-menu"; Tasks: desktopicon
 
 [Registry]

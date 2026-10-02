@@ -61,7 +61,11 @@ public partial class BootstrapperWindow : Window
             {
                 NotifyService.Show(AppInfo.Name, studio
                     ? "Octane Studio is starting."
-                    : !string.IsNullOrWhiteSpace(_args.ProtocolUri) ? "Joining your game." : "Octane is starting.");
+                    : !string.IsNullOrWhiteSpace(_args.ProtocolUri) && !AppBetaService.IsAppModeProtocol(_args.ProtocolUri)
+                        ? "Joining your game."
+                        : _args.AppBeta || App.Settings.Prop.LaunchAppBeta || AppBetaService.IsAppModeProtocol(_args.ProtocolUri)
+                            ? "Octane App is starting."
+                            : "Octane is starting.");
                 App.StartSession(new GameSession(result.Process, _args.ExtractPlaceId(), studio));
             }
             else

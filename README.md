@@ -26,6 +26,7 @@ X Bootstrapper checks GitHub Releases for this repository when you open it. It i
 - Launch with the game: start your own programs with Octane and optionally close them when it exits
 - Tray icon while a game is running (Open settings, Open logs, Exit)
 - Closing the window exits X Bootstrapper completely unless **Behaviour → Keep running in the background after closing** is on (then it waits in the notification area and keeps the website links pointed at itself). `X Bootstrapper.exe -quit` exits a copy running in the background
+- **Behaviour → Launch the Windows App Beta home** starts Octane with `--app` (the old Roblox App Beta UI). `X Bootstrapper.exe -app` does the same. Octane's current client often lacks App Beta; X Bootstrapper detects that and explains instead of opening a white screen
 - **About → Copy logs** saves the newest logs and a settings summary to one zip on the Desktop, with tokens, tickets and join links removed
 - A short first-run setup for new installs, and What's new after each update (works offline)
 - Launcher themes (Midnight, Octane, Dusk, Paper, Slate, xyxy light/dark), each in the new Modern style or the previous Classic style (Appearance → Classic style)

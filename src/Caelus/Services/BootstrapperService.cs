@@ -42,7 +42,9 @@ public sealed class BootstrapperService
         if (_settings.RegisterWebsiteProtocol)
             await Task.Run(() => ProtocolService.Register(_settings, _state), token);
 
-        SetStatus(_args.Mode == LaunchMode.Studio ? "Starting Octane Studio..." : "Starting Octane...");
+        SetStatus(_args.Mode == LaunchMode.Studio
+            ? "Starting Octane Studio..."
+            : WantsAppBeta() ? "Starting Octane App..." : "Starting Octane...");
         var result = await LaunchAsync(install, token);
 
         _state.PlayerVersionGuid = install.VersionGuid;
@@ -59,6 +61,20 @@ public sealed class BootstrapperService
         var studio = _args.Mode == LaunchMode.Studio;
         var watchNames = studio ? ClientLocator.StudioProcessNames : ClientLocator.PlayerProcessNames;
         var alreadyRunning = ClientLocator.RunningIds(watchNames);
+
+        // App Beta is a direct player launch with --app. OctanePlayerLauncher does not understand
+        // launchmode:app (it only builds join flags), and handing those URIs off is what produces
+        // the white screen people see with the DevForum method on Octane.
+        if (!studio && WantsAppBeta())
+        {
+            if (!AppBetaService.ClientSupportsAppBeta(install.PlayerExecutable))
+                throw new InvalidOperationException(AppBetaService.MissingSupportMessage(install.PlayerExecutable));
+
+            Logger.Write("Bootstrapper", $"Launching App Beta: {Path.GetFileName(install.PlayerExecutable)} {AppBetaService.LaunchArguments}");
+            SetStatus("Starting Octane App...");
+            var app = StartProcess(install.PlayerExecutable, start => start.Arguments = AppBetaService.LaunchArguments);
+            return new LaunchResult(app, true, install);
+        }
 
         if (!string.IsNullOrWhiteSpace(_args.ProtocolUri))
         {
@@ -96,6 +112,22 @@ public sealed class BootstrapperService
 
         var process = StartProcess(exe, _ => { });
         return new LaunchResult(process, true, install);
+    }
+
+    /// <summary>
+    /// App Beta from <c>-app</c>, a launchmode:app protocol, or Behaviour → Launch App Beta
+    /// (only when this launch is not already a website join).
+    /// </summary>
+    private bool WantsAppBeta()
+    {
+        if (_args.Mode == LaunchMode.Studio)
+            return false;
+        if (_args.AppBeta || AppBetaService.IsAppModeProtocol(_args.ProtocolUri))
+            return true;
+        // A real join URI must still go to OctanePlayerLauncher; App Beta is for opening the home UI.
+        if (!string.IsNullOrWhiteSpace(_args.ProtocolUri))
+            return false;
+        return _settings.LaunchAppBeta;
     }
 
     /// <summary>

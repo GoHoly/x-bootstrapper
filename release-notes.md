@@ -1,29 +1,16 @@
-X Bootstrapper 2.3.2 fixes theme picking and gives themes their own logo.
-
-## Fixed
-- **Picking a theme works every time.** Clicking a theme tile sometimes didn't change anything. The tile only reacted when the mouse button was released over it, but the tile shrinks a little while pressed (and more in xyxy's theme), so a release near its edge could miss it. The pick also saved before repainting, so if Settings.json was busy for a moment the menu never changed and the theme only showed up later. Tiles now react as soon as you press them, the menu repaints first and then saves. Same fix for the first-run setup
+X Bootstrapper 2.3.3 adds Windows App Beta launch support for Octane.
 
 ## New
-- **Theme logos.** Octane shows a purple neon logo, Classic a blue one, Paper and Dusk a red one, xyxy's theme a pink one. Midnight keeps the original X. The logo changes right away in the menu, the launch window, the setup, update and What's new windows
+- **Windows App Beta (Octane App).** Behaviour has **Launch the Windows App Beta home (Octane App)**. When it is on, **Launch Octane** starts the client with `--app` (the same path as the old Roblox / Aisaka App Beta), instead of a blank player. Website Play links still join games as before. You can also use `X Bootstrapper.exe -app`, or the Start Menu **Octane App** shortcut after installing
+- **launchmode:app links.** If a protocol URI asks for App Beta (`launchmode:app`), X Bootstrapper launches the player with `--app` itself. It does not hand those links to OctanePlayerLauncher (which only understands joins), which is what turned the DevForum method into a white screen on Octane
+
+## Important
+- **Octane's current client often cannot open App Beta.** Stock `OctanePlayer.exe` no longer includes the `--app` launch path (and OctanePlayerLauncher has no App Beta handling). When that is the case, X Bootstrapper shows a clear message instead of a white window. If Octane restores App Beta, or you point Install → client folder at a 2021 build that still has it, the same setting works without another update
+
+## Also in 2.3.2
+Theme picking always applies, and themes get their own neon logos (Octane purple, Classic blue, Paper/Dusk red, xyxy pink; Midnight keeps the original X).
 
 ## Also in 2.3
-Version 2.3.1 added a sky picker, a Discord status choice, a warning when Play on octane.wtf stops going through X Bootstrapper, one-click log bundles, a first-run setup and a What's new window. Closing X Bootstrapper exits it completely by default.
-
-## New
-- **Sky picker (Mods page).** Pick Sunset, Starry night, Purple nebula or Clear day, or use your own six images of any size (names ending in _bk, _dn, _ft, _lf, _rt, _up are placed automatically, anything else is asked for face by face). X Bootstrapper converts them to the client's own sky format. **Default** puts Octane's original sky back exactly. Games that set their own sky keep theirs
-- **Choose whose Discord status shows.** Integrations now has a Discord status setting: **X Bootstrapper status** (as before), **Octane's own status**, or **None**. Discord shows one game status from your PC at a time, so with Octane's own or None, X Bootstrapper doesn't connect to Discord at all. X Bootstrapper can't switch off the status the Octane client sets itself; to hide that too, use Discord's Activity Privacy setting. Your old Rich Presence setting carries over
-- **Warning when the website links are taken.** Octane's launcher sometimes takes the octane-player:// and octane-studio:// links back, and then Play on octane.wtf skips your mods, FastFlags and Discord status choice. The menu now checks this while it's open and shows a banner with a **Fix links** button, and the log records who took them
-- **Copy logs (About page).** Puts the newest logs, your version and a short settings summary into one zip on your Desktop, ready for a bug report. Anything that looks like a token, ticket, cookie, key or join link is removed first, and your user folder path is replaced with %USERPROFILE%
-- **First-run setup.** New installs get a short setup: theme and style, Discord status, a website links check and the background setting. Skip it if you like; About can open it again
-- **What's new.** After an update, these notes open once, over the menu. They're built into the app, so they work offline. You can turn this off, and About can open them any time
-
-## Changed
-- **Closing X Bootstrapper exits it completely.** A new setting in Behaviour (and in the first-run setup), **Keep running in the background after closing**, is **off** by default. With it off, closing the window leaves nothing running in Task Manager. When you start a game through X Bootstrapper, a small helper stays only as long as it's needed: until the game closes if X Bootstrapper shows your Discord status or closes programs with the game, otherwise about 15 seconds, to take the website links back. Turn the setting on to keep X Bootstrapper in the notification area after closing it. From there it keeps the website links pointed at X Bootstrapper, and you can exit it from the tray icon
-
-## Fixed
-- **X Bootstrapper's Discord status keeps its head start.** 2.2.1 connected to Discord as the launch began, but dropped that connection and reconnected once the game had started, so Octane's own status could still get in first. The connection opened at launch is now kept for the whole game session
-
-## Not included
-- **Replacing in-game assets (decals, meshes, sounds by asset ID).** Octane downloads these into a shared, checksummed web cache that it checks again every day, so swapping them would mean editing that cache (undone silently) or intercepting the game's traffic. It could also make some things easier to see in competitive games. Local content (sky, sounds, cursors, fonts, UI) is still covered by Mods
+Sky picker, Discord status choice, website-link health warning, Copy logs, first-run setup, What's new, and exit-on-close by default. See earlier notes for detail.
 
 Existing installs update automatically from GitHub Releases. New users: download **X.Bootstrapper.Setup.exe**. No administrator account is required.

@@ -16,6 +16,8 @@ public sealed class LaunchArgs
     public bool Quiet { get; private set; }
     public bool Menu { get; private set; }
     public bool SkipUpdate { get; set; }
+    /// <summary>Force Windows App Beta (--app), from <c>-app</c> or a launchmode:app protocol.</summary>
+    public bool AppBeta { get; set; }
     public string? ImportModsPath { get; set; }
 
     public static LaunchArgs Parse(string[] args)
@@ -33,6 +35,9 @@ public sealed class LaunchArgs
                 parsed.ProtocolUri = arg;
                 // Decide from the scheme only; the payload itself can contain any text.
                 parsed.Mode = IsStudioScheme(SchemeOf(arg)) ? LaunchMode.Studio : LaunchMode.Player;
+                if (ProtocolPayload.TryParse(arg) is { } payload &&
+                    payload.LaunchMode.Equals("app", StringComparison.OrdinalIgnoreCase))
+                    parsed.AppBeta = true;
                 continue;
             }
 
@@ -53,6 +58,13 @@ public sealed class LaunchArgs
                 case "-player":
                 case "--player":
                     parsed.Mode = LaunchMode.Player;
+                    break;
+                case "-app":
+                case "--app":
+                case "-appbeta":
+                case "--app-beta":
+                    parsed.Mode = LaunchMode.Player;
+                    parsed.AppBeta = true;
                     break;
                 case "-studio":
                 case "--studio":

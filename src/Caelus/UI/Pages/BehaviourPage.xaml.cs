@@ -13,6 +13,7 @@ public partial class BehaviourPage : System.Windows.Controls.UserControl
         StayBox.IsChecked = s.StayOpenAfterLaunch;
         TrayBox.IsChecked = s.ShowTrayIcon;
         BackgroundBox.IsChecked = s.KeepRunningInBackground;
+        AppBetaBox.IsChecked = s.LaunchAppBeta;
         BackgroundHint.Text = UiText.BackgroundHint;
         BackgroundBox.Checked += (_, _) => Write();
         BackgroundBox.Unchecked += (_, _) => Write();
@@ -24,6 +25,8 @@ public partial class BehaviourPage : System.Windows.Controls.UserControl
         ConfirmBox.Unchecked += (_, _) => Write();
         StayBox.Checked += (_, _) => Write();
         StayBox.Unchecked += (_, _) => Write();
+        AppBetaBox.Checked += (_, _) => Write();
+        AppBetaBox.Unchecked += (_, _) => Write();
     }
 
     private void Write()
@@ -34,6 +37,7 @@ public partial class BehaviourPage : System.Windows.Controls.UserControl
         s.StayOpenAfterLaunch = StayBox.IsChecked == true;
         s.ShowTrayIcon = TrayBox.IsChecked == true;
         s.KeepRunningInBackground = BackgroundBox.IsChecked == true;
+        s.LaunchAppBeta = AppBetaBox.IsChecked == true;
         App.Save();
     }
 }

@@ -63,6 +63,9 @@ public sealed class Settings
     public bool ConfirmLaunches { get; set; }
     public bool StayOpenAfterLaunch { get; set; }
     public bool RegisterWebsiteProtocol { get; set; } = true;
+    // When on, Launch Octane / -player starts the Windows App Beta home UI (--app) instead of a blank player.
+    // Octane's current client often lacks --app; X Bootstrapper detects that and explains instead of a white screen.
+    public bool LaunchAppBeta { get; set; }
 
     // Kept in step with DiscordStatus (true only for X Bootstrapper status) so older versions read it right.
     public bool DiscordRichPresence { get; set; } = true;

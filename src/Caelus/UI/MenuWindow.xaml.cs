@@ -206,7 +206,9 @@ public partial class MenuWindow : Window
         NavIntegrations.Content = playful ? "Integrations 💎" : "Integrations";
         NavInstall.Content = playful ? "Install 🌷" : "Install";
         NavAbout.Content = playful ? "About 🍓" : "About";
-        LaunchPlayerButton.Content = playful ? "Launch Octane 💕" : "Launch Octane";
+        LaunchPlayerButton.Content = App.Settings.Prop.LaunchAppBeta
+            ? (playful ? "Launch Octane App 💕" : "Launch Octane App")
+            : (playful ? "Launch Octane 💕" : "Launch Octane");
         LaunchStudioButton.Content = playful ? "Studio 🎀" : "Studio";
     }
 
@@ -218,7 +220,10 @@ public partial class MenuWindow : Window
         PageHost.Content = CreatePage(sender);
 
         if (IsLoaded)
+        {
+            RefreshPlayfulCopy();
             PlayfulMotion.PopIn(PageHost);
+        }
     }
 
     private object? CreatePage(object sender)
