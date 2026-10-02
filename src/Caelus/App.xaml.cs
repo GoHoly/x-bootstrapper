@@ -683,15 +683,40 @@ public partial class App : System.Windows.Application
     /// <summary>
     /// Keeps Rich Presence up for the whole session: reuses the connection opened at launch (or connects),
     /// shows the session, and reconnects if Discord starts later or restarts. Cleared when the session ends.
+    /// Place titles are resolved from Octane so Discord shows the game name, not only "Place 52645".
     /// </summary>
     private static async Task StartPresenceAsync(GameSession session)
     {
         var failures = 0;
         DiscordService? shownOn = null;
+        string? shownState = null;
+        Task<string?>? nameLookup = null;
+        if (session.PlaceId is not null && Settings.Prop.ActivityTracking)
+            nameLookup = PlaceInfoService.ResolveNameAsync(session.PlaceId);
+
         while (ReferenceEquals(Session, session) && failures < PresenceMaxFailures)
         {
             try
             {
+                if (nameLookup is not null)
+                {
+                    // Don't wait the full reconnect interval for the title; refresh Discord as soon as it arrives.
+                    var finished = await Task.WhenAny(nameLookup, Task.Delay(TimeSpan.FromSeconds(2)));
+                    if (finished == nameLookup)
+                    {
+                        try
+                        {
+                            session.PlaceName = await nameLookup;
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Write("Discord", $"Place name lookup failed: {ex.Message}");
+                        }
+
+                        nameLookup = null;
+                    }
+                }
+
                 var discord = await EnsureDiscordAsync();
                 if (!ReferenceEquals(Session, session))
                     return;
@@ -700,17 +725,19 @@ public partial class App : System.Windows.Application
                 {
                     failures++;
                 }
-                else if (!ReferenceEquals(discord, shownOn))
+                else
                 {
                     failures = 0;
-                    shownOn = discord;
-                    var s = Settings.Prop;
-                    // With activity tracking off, the place is never shared.
-                    var place = s.ActivityTracking ? session.PlaceId : null;
-                    discord.SetPresence(
-                        session.IsStudio ? "Building in Octane Studio" : "Playing on Octane",
-                        place is null ? (session.IsStudio ? "Octane Studio" : "In game") : $"Place {place}",
-                        session.Started);
+                    var state = PresenceState(session);
+                    if (!ReferenceEquals(discord, shownOn) || !string.Equals(state, shownState, StringComparison.Ordinal))
+                    {
+                        shownOn = discord;
+                        shownState = state;
+                        discord.SetPresence(
+                            session.IsStudio ? "Building in Octane Studio" : "Playing on Octane",
+                            state,
+                            session.Started);
+                    }
                 }
             }
             catch (Exception ex)
@@ -719,8 +746,24 @@ public partial class App : System.Windows.Application
                 Logger.Write("Discord", $"Rich Presence failed: {ex.Message}");
             }
 
-            await Task.Delay(PresenceRetry);
+            // Poll often while the place title is still loading; otherwise the usual reconnect interval.
+            await Task.Delay(nameLookup is null ? PresenceRetry : TimeSpan.FromSeconds(1));
         }
+    }
+
+    private static string PresenceState(GameSession session)
+    {
+        var s = Settings.Prop;
+        if (!s.ActivityTracking)
+            return session.IsStudio ? "Octane Studio" : "In game";
+
+        if (!string.IsNullOrWhiteSpace(session.PlaceName))
+            return PlaceInfoService.TruncateForDiscord(session.PlaceName);
+
+        if (!string.IsNullOrWhiteSpace(session.PlaceId))
+            return $"Place {session.PlaceId}";
+
+        return session.IsStudio ? "Octane Studio" : "In game";
     }
 
     /// <summary>

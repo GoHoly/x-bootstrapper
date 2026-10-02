@@ -19,7 +19,7 @@ internal static class UiText
         DiscordStatusMode.None =>
             "X Bootstrapper stays off Discord. Honest note: the Octane client still sets its own \"Playing Octane\" status and X Bootstrapper can't turn that off. To hide it too, turn off activity sharing in Discord (User Settings > Activity Privacy).",
         _ =>
-            "Shows \"Playing on Octane\" with the place and time played. Discord shows one game status from this PC at a time, so X Bootstrapper connects as the launch starts and its status is the one shown instead of Octane's. Cleared when the game closes. Discord must be running."
+            "Shows \"Playing on Octane\" with the place name (looked up from Octane) and time played. Discord shows one game status from this PC at a time, so X Bootstrapper connects as the launch starts and its status is the one shown instead of Octane's. Cleared when the game closes. Discord must be running."
     };
 
     public const string BackgroundHint =

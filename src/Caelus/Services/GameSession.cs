@@ -15,6 +15,8 @@ public sealed class GameSession : IDisposable
 
     public Process Process { get; }
     public string? PlaceId { get; }
+    /// <summary>Resolved later from Octane's games API for Discord Rich Presence; may stay null.</summary>
+    public string? PlaceName { get; set; }
     public bool IsStudio { get; }
     public DateTimeOffset Started { get; } = DateTimeOffset.UtcNow;
 

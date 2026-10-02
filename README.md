@@ -31,7 +31,7 @@ X Bootstrapper checks GitHub Releases for this repository when you open it. It i
 - A short first-run setup for new installs, and What's new after each update (works offline)
 - Launcher themes (Midnight, Octane, Dusk, Paper, Slate, xyxy light/dark), each in the new Modern style or the previous Classic style (Appearance → Classic style)
 - Windows notifications when a game is starting and when a new launcher version is out
-- Discord Rich Presence over local IPC (see below)
+- Discord Rich Presence over local IPC (see below). Status shows the place **name** from Octane, not only the place ID
 
 ## Discord Rich Presence
 
